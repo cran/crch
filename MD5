@@ -1,0 +1,16 @@
+8bc0378c9cea6ab3cb4c1b221cffd440 *DESCRIPTION
+bb773cadc29f8858fe36ff1de4ce27cd *NAMESPACE
+070b211750762e126c8e682a3bf87627 *NEWS
+21648e629e74084ff412a8ec4a100d3d *R/crch.R
+96b635af28d2bb978d18a4c779c5aeaf *R/hxlr.R
+9e7b33663f8dea4985d0f2c364c10a62 *data/RainIbk.rda
+4bc72125e6c1198cc4e3e3a6accfa115 *inst/CITATION
+1496dc130933bca20e3a43468aae0c3b *man/RainIbk.Rd
+9f62dcd1a2a00286788711a817cdb420 *man/coef.crch.Rd
+628b27fe858fef4cd4bf9d2c88ebdb60 *man/coef.hxlr.Rd
+75c655da7090f9512ef1a7fd9bcddcb3 *man/crch.Rd
+7793c101fec18bdc2d94282fe329da6d *man/crch.control.Rd
+0b8b622c6f7ac35d3e30b3710efa998a *man/hxlr.Rd
+50289e706a594f6137c95e70183449ca *man/hxlr.control.Rd
+0426ebf523027f9b214f9f48cd438301 *man/predict.crch.Rd
+89ad59bef69fe7ccb04f3ea5f2d86ebf *man/predict.hxlr.Rd
