@@ -9,7 +9,7 @@
   models (Messner et al. 2013).
 }
 \usage{
-hxlr(formula, data, subset, na.action, weights, thresholds, control, \dots)
+hxlr(formula, data, subset, na.action, weights, thresholds, link, control, \dots)
 }
 \arguments{
   \item{formula}{a formula expression of the form \code{y ~ x | z} where
@@ -27,6 +27,8 @@ hxlr(formula, data, subset, na.action, weights, thresholds, control, \dots)
   continuous response into categories. Data frames or matrices with multiple
   columns are allowed as well. Then each column is used as separate predictor
   variable for the intercept model.}
+  \item{link}{link function, i.e., the type of location-scale distribution
+  assumed for the latent distribution. Default is \code{logit}.}
   \item{control}{a list of control parameters passed to \code{\link{optim}}.
   Default is \code{\link{hxlr.control}}}
   \item{\dots}{arguments to be used to form the default \code{control} argument
@@ -67,10 +69,9 @@ predict the scale of the latent logistic distribution.
 }
 
 \references{
-  Messner JW, Mayr GJ, Zeileis A, Wilks DS (2013). Extending Extended Logistic
+  Messner JW, Mayr GJ, Zeileis A, Wilks DS (2014). Extending Extended Logistic
     Regression to Effectively Utilize the Ensemble Spread. \emph{Monthly Weather
-    Review}, in press. Preprint version available at
-    \url{http://EconPapers.RePEc.org/RePEc:inn:wpaper:2013-21}
+    Review}, \bold{142}, 448--456. doi:http://dx.doi.org/10.1175/MWR-D-13-00271.1.
 
   Wilks DS (2009).  Extending Logistic Regression to Provide
     Full-Probability-Distribution MOS Forecasts.  \emph{Meteorological
@@ -112,9 +113,10 @@ HXLR <- hxlr(sqrt(rain) ~ sqrtensmean | sqrtenssd, data = RainIbk,
 AIC(XLR, XLRS, HXLR)
 
 ## XLRS and HXLR are nested in XLR -> likelihood-ratio-tests
-library("lmtest")
-lrtest(XLR, XLRS)
-lrtest(XLR, HXLR)
+if(require("lmtest")) {
+  lrtest(XLR, XLRS)
+  lrtest(XLR, HXLR)
+}
 
 \dontrun{
 ###################################################################

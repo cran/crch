@@ -1,5 +1,5 @@
 hxlr <- function(formula, data, subset = NULL, na.action = NULL, weights, 
-  thresholds, control = hxlr.control(...), ...)
+  thresholds, link = "logit", control = hxlr.control(...), ...)
 {
   ## call
   cl <- match.call()
@@ -107,7 +107,7 @@ hxlr <- function(formula, data, subset = NULL, na.action = NULL, weights,
 
   stopifnot(requireNamespace("ordinal"))
   ## get environment from clm
-  env <- ordinal::clm(formula = mformula, scale = mtZ, data = data, weights = weights, doFit = FALSE)
+  env <- ordinal::clm(formula = mformula, scale = mtZ, data = data, weights = weights, doFit = FALSE, link = link)
   
   ## thresholds can also be data.frame with several columns (predictor variables for intercept model)
   q <- model.matrix(~ thresholds)
@@ -136,7 +136,8 @@ hxlr <- function(formula, data, subset = NULL, na.action = NULL, weights,
   ## starting values
   if(is.null(start)) {
     ## starting values from clm fit, threshold coefficients set to 0 and 1
-    strt <- ordinal::clm(formula = mformula, scale = mtZ, data = data, weights = weights)
+    strt <- ordinal::clm(formula = mformula, scale = mtZ, data = data, 
+      weights = weights, link = link)
     strt <- c(0, rep(1, p-1)/(p-1), strt$beta, strt$zeta)
   }
   if(is.list(start)) start <- do.call("c", start) 
@@ -423,27 +424,30 @@ coef.hxlr <- function(object, model = c("full", "intercept", "location", "scale"
   )
 }
 
-#TODO: vcov for type latent
-vcov.hxlr <- function(object, model = c("full", "intercept", "location", "scale"),...) {
+
+vcov.hxlr <- function(object, model = c("full", "intercept", "location", "scale"), type = c("CLM", "latent"),...) {
   vc <- object$vcov
   k <- length(object$coefficients$intercept)
   l <- length(object$coefficients$location)
   m <- length(object$coefficients$scale)
-
+  type<- match.arg(type)
   model <-  match.arg(model)
   
-#  if(type == "latent") {
-#    alpha <- object$coefficients$intercept
-#    beta <- object$coefficients$location
-#    delta <- object$coefficients$scale
-#    dh <- cbind(
-#      c(-1/alpha[2], rep(0, l + m + 1)), 
-#      c(alpha[1]/alpha[2]^2, -beta/alpha[2]^2, -1/alpha[2], rep(0,m)),
-#      rbind(0, diag(l)*1/alpha[2], matrix(0, m + 1, l)),
-#      rbind(matrix(0, k + l,  m), diag(m))
-#    )
-#    vc <- dh %*% vc %*% dh
-#  }
+  if(type == "latent") {
+    ## Delta Method
+    alpha <- object$coefficients$intercept
+    beta <- object$coefficients$location
+    delta <- object$coefficients$scale
+    dh <- cbind(
+      c(-1/alpha[2], rep(0, l + m + 1)), 
+      c(alpha[1]/alpha[2]^2, -beta/alpha[2]^2, -1/alpha[2], rep(0,m)),
+      rbind(0, diag(l)*1/alpha[2], matrix(0, m + 1, l)),
+      rbind(matrix(0, k + l,  m), diag(m))
+    )
+    vc <- dh %*% vc %*% t(dh)
+  }
+
+
   switch(model,
     "intercept" = {
       vc[seq.int(length.out = k) , seq.int(length.out = k), drop = FALSE]

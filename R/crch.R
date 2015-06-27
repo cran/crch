@@ -1,6 +1,7 @@
-crch <- function(formula, data, subset, na.action, weights, offset,
-  dist = c("student", "gaussian", "logistic"), df = NULL,
-  left = -Inf, right = Inf, control = crch.control(...),
+crch <- function(formula, data, subset, na.action, weights, offset, 
+  link.scale = c("log", "identity", "quadratic"), 
+  dist = c("gaussian", "logistic", "student"), df = NULL,
+  left = -Inf, right = Inf, truncated = FALSE , control = crch.control(...),
   model = TRUE, x = FALSE, y = FALSE, ...)
 {
   ## call
@@ -25,15 +26,13 @@ crch <- function(formula, data, subset, na.action, weights, offset,
     simple_formula <- FALSE
   }
   mf$formula <- formula
-
   ## evaluate model.frame
   mf[[1L]] <- as.name("model.frame")
   mf <- eval(mf, parent.frame())
-
   ## extract terms, model matrix, response
-  mt <- terms(formula, data = data)
-  mtX <- terms(formula, data = data, rhs = 1L)
-  mtZ <- delete.response(terms(formula, data = data, rhs = 2L))
+  mt <- terms(formula, data = data, dot = control$dot)
+  mtX <- terms(formula, data = data, rhs = 1L, dot = control$dot)
+  mtZ <- delete.response(terms(formula, data = data, rhs = 2L, dot = control$dot))
   Y <- model.response(mf, "numeric")
   X <- model.matrix(mtX, mf)
   Z <- model.matrix(mtZ, mf)
@@ -43,21 +42,24 @@ crch <- function(formula, data, subset, na.action, weights, offset,
     ## original terms
     rval <- terms
     ## terms from model.frame
-    nval <- if(inherits(model.frame, "terms")) model.frame else terms(model.frame)
+    nval <- if(inherits(model.frame, "terms")) model.frame else terms(model.frame, dot = control$dot)
 
     ## associated variable labels
     ovar <- sapply(as.list(attr(rval, "variables")), deparse)[-1]
     nvar <- sapply(as.list(attr(nval, "variables")), deparse)[-1]
-    if(!all(ovar %in% nvar)) stop(paste("The following terms variables are not part of the model.frame:",
+    if(!all(ovar %in% nvar)) stop(
+      paste("The following terms variables are not part of the model.frame:",
       paste(ovar[!(ovar %in% nvar)], collapse = ", ")))
     ix <- match(ovar, nvar)
   
     ## subset predvars
-    if(!is.null(attr(rval, "predvars"))) warning("terms already had 'predvars' attribute, now replaced")
+    if(!is.null(attr(rval, "predvars"))) 
+      warning("terms already had 'predvars' attribute, now replaced")
     attr(rval, "predvars") <- attr(nval, "predvars")[1L + c(0L, ix)]
 
     ## subset dataClasses
-    if(!is.null(attr(rval, "dataClasses"))) warning("terms already had 'dataClasses' attribute, now replaced")
+    if(!is.null(attr(rval, "dataClasses"))) 
+      warning("terms already had 'dataClasses' attribute, now replaced")
     attr(rval, "dataClasses") <- attr(nval, "dataClasses")[ix]
   
     return(rval)
@@ -66,12 +68,16 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   mtX <- .add_predvars_and_dataClasses(mtX, mf)
   mtZ <- .add_predvars_and_dataClasses(mtZ, mf)
 
+  ## link
+  if(is.character(link.scale)) link.scale <- match.arg(link.scale)
+
+
   ## distribution
-  dist <- match.arg(dist)
+  if(is.character(dist)) dist <- match.arg(dist)
 
   ## sanity checks
   if(length(Y) < 1) stop("empty model")
-  if(dist == "student") {
+  if(identical(dist, "student")) {
     if(!is.null(df) && df <= 0) stop("'df' must be positive")
     if(!is.null(df) && !is.finite(df)) dist <- "gaussian"
   }
@@ -103,14 +109,18 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   offset <- list(location = offsetX, scale = offsetZ)
  
 
-  ## call the actual workhorse: crch.fit() 
-  rval <- crch.fit(x = X, y = Y, z = Z, left = left, right = right, dist = dist, df = df, weights = weights, offset = offset, control = control)
+  ## call the actual workhorse: crch.fit()
+  rval <- crch.fit(x = X, y = Y, z = Z, left = left, right = right, 
+    link.scale = link.scale, dist = dist, df = df, weights = weights, 
+    offset = offset, control = control, truncated = truncated)
+  
 
   ## further model information
-  rval$call <- cl
+  rval$call <- if(length(control$call)) control$call else cl
   rval$formula <- oformula
   rval$terms <- list(location = mtX, scale = mtZ, full = mt)
-  rval$levels <- list(location = .getXlevels(mtX, mf), scale = .getXlevels(mtZ, mf), full = .getXlevels(mt, mf))
+  rval$levels <- list(location = .getXlevels(mtX, mf), 
+    scale = .getXlevels(mtZ, mf), full = .getXlevels(mt, mf))
   rval$contrasts <- list(location = attr(X, "contrasts"), scale = attr(Z, "contrasts"))
   if(model) rval$model <- mf
   if(y) rval$y <- Y
@@ -121,9 +131,26 @@ crch <- function(formula, data, subset, na.action, weights, offset,
 }
 
 
-crch.control <- function(method = "BFGS", maxit = 5000, hessian = TRUE, trace = FALSE, start = NULL, ...)
+trch <- function(formula, data, subset, na.action, weights, offset,
+  link.scale = c("log", "identity", "quadratic"), 
+  dist = c("gaussian", "logistic", "student"), df = NULL,
+  left = -Inf, right = Inf, truncated = TRUE , control = crch.control(...),
+  model = TRUE, x = FALSE, y = FALSE, ...) 
 {
-  rval <- list(method = method, maxit = maxit, hessian = hessian, trace = trace, start = start)
+  cl <- match.call()
+  cl2 <- cl
+  cl2[[1]] <- as.name("crch")
+  cl2$truncated <- truncated
+  cl2$call <- as.name("cl")
+  
+  eval(cl2)
+}
+
+crch.control <- function(method = "BFGS", maxit = 5000, hessian = NULL, trace = FALSE, 
+  start = NULL, dot = "separate", ...)
+{
+  rval <- list(method = method, maxit = maxit, hessian = hessian, trace = trace, 
+    start = start, dot = dot)
   rval <- c(rval, list(...))
   if(!is.null(rval$fnscale)) warning("fnscale must not be modified")
   rval$fnscale <- 1
@@ -132,7 +159,8 @@ crch.control <- function(method = "BFGS", maxit = 5000, hessian = TRUE, trace = 
 }
 
 
-crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,  
+crch.fit <- function(x, z, y, left, right, truncated = FALSE, 
+  dist = "gaussian", df = NULL, link.scale = "log",
   weights = NULL, offset = NULL, control = crch.control()) 
 {
   ## response and regressor matrix
@@ -140,7 +168,7 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
   k <- NCOL(x)
   if(is.null(weights)) weights <- rep.int(1, n)
   nobs <- sum(weights > 0)
-  dfest <- dist == "student" & is.null(df)
+  dfest <- identical(dist, "student") & is.null(df)
   if(is.null(offset)) offset <- rep.int(0, n)
   if(!is.list(offset)) offset <- list(location = offset, scale = rep.int(0, n))
   if(is.null(z)) {
@@ -153,18 +181,6 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
     if(q < 1L) stop("scale regression needs to have at least one parameter")
   }
 
-  dist <- match.arg(dist, c("student", "gaussian", "logistic"))
-  ddist <- switch(dist,
-    "student"  = function(x, location, scale, df) dt((x - location)/scale, df = df, log = TRUE) - log(scale),
-    "gaussian" = function(x, location, scale, df) dnorm((x - location)/scale, log = TRUE) - log(scale),
-    "logistic" = function(x, location, scale, df) dlogis((x - location)/scale, log = TRUE) - log(scale)
-  )
-  pdist <- switch(dist,
-    "student"  = function(x, location, scale, df, lower.tail = TRUE) pt((x - location)/scale, df = df, lower.tail = lower.tail, log.p = TRUE),
-    "gaussian" = function(x, location, scale, df, lower.tail = TRUE) pnorm((x - location)/scale, lower.tail = lower.tail, log.p = TRUE),
-    "logistic" = function(x, location, scale, df, lower.tail = TRUE) plogis((x - location)/scale, lower.tail = lower.tail, log.p = TRUE)
-  )
-
   ## control parameters
   ocontrol <- control
   method <- control$method
@@ -172,11 +188,90 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
   start <- control$start
   control$method <- control$hessian <- control$start <- NULL
 
+  
+
+  if(is.character(dist)){
+    ## distribution functions
+    if(truncated) {
+      ddist2 <- switch(dist, 
+        "student"  = dtt, "gaussian" = dtnorm, "logistic" = dtlogis)
+      sdist2 <- switch(dist, 
+        "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
+      hdist2 <- switch(dist, 
+        "student"  = htt, "gaussian" = htnorm, "logistic" = htlogis)
+    } else {
+      ddist2 <- switch(dist, 
+        "student"  = dct, "gaussian" = dcnorm, "logistic" = dclogis)
+      sdist2 <- switch(dist, 
+        "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
+      hdist2 <- switch(dist, 
+        "student"  = hct, "gaussian" = hcnorm, "logistic" = hclogis)
+    }
+    ddist <- if(dist == "student") ddist2 else function(..., df) ddist2(...)
+    sdist <- if(dist == "student") sdist2 else function(..., df) sdist2(...)
+    hdist <- if(dist == "student") hdist2 else function(..., df) hdist2(...)
+
+
+  } else { 
+    ## for user defined distribution (requires list with ddist, sdist (optional)
+    ## and hdist (optional), ddist, sdist, and hdist must be functions with
+    ## arguments x, mean, sd, df, left, right, and log)
+    ddist <- dist$ddist
+    sdist <- if(is.null(dist$sdist)) NULL else  dist$sdist
+    if(is.null(dist$hdist)) {
+      if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
+      hessian <- TRUE  
+    
+    } else dist$hdist 
+    dist <- "user defined"
+  }
+
+  ## analytic or numeric Hessian
+  if(is.null(hessian)) hessian <- if(dfest) TRUE else FALSE
+  if(!hessian & dfest) {
+    warning("No analytical Hessian can be derived if df is estimated. hessian is set to TRUE")
+    hessian <- TRUE
+  }
+
+
+  ## link
+  if(is.character(link.scale)) {
+    linkstr <- link.scale
+    if(linkstr != "quadratic") {
+      linkobj <- make.link(linkstr)
+      linkobj$dmu.deta <- switch(linkstr, 
+        "identity" = function(eta) rep.int(0, length(eta)), 
+        "log" = function(eta) pmax(exp(eta), .Machine$double.eps))
+    } else {
+      linkobj <- structure(list(
+        linkfun = function(mu) mu^2,
+        linkinv = function(eta) sqrt(eta),
+        mu.eta = function(eta) 1/2/sqrt(eta),
+        dmu.deta = function(eta) -1/4/sqrt(eta^3),
+        valideta = function(eta) TRUE,
+        name = "quadratic"
+      ), class = "link-glm")
+    }
+  } else {
+    linkobj <- link.scale
+    linkstr <- link.scale$name
+    if(is.null(linkobj$dmu.deta) & !hessian) {
+      warning("link.scale needs to provide dmu.deta component for analytical Hessian. hessian is set to TRUE to employ numerical Hessian.")
+      hessian <- TRUE
+    }
+  }
+  linkfun <- linkobj$linkfun
+  linkinv <- linkobj$linkinv
+  mu.eta <- linkobj$mu.eta
+  dmu.deta <- linkobj$dmu.deta
+
+
   ## starting values
   if(is.null(start)) {
     auxreg <- lm.wfit(x, y, w = weights, offset = offset[[1L]])
     beta <- auxreg$coefficients
-    gamma <- c(log(sqrt(sum(weights * auxreg$residuals^2)/auxreg$df.residual)), rep(0, q-1))
+    gamma <- c(linkfun(sqrt(sum(weights * auxreg$residuals^2)/
+      auxreg$df.residual)), rep(0, ncol(z) - 1))
     start <- if(dfest) c(beta, gamma, log(10)) else c(beta, gamma)
   }
   if(is.list(start)) start <- do.call("c", start) 
@@ -184,43 +279,66 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
     warning(paste("too many entries in start! only first", k + q + dfest, "entries are considered"))
     start <- start[1: (k + q + dfest)]
   }
-
   ## various fitted quantities (parameters, linear predictors, etc.)
   fitfun <- function(par) {
     beta <- par[seq.int(length.out = k)]
     gamma <- par[seq.int(length.out = q) + k]
     delta <- if(dfest) tail(par, 1) else NULL
     mu <- drop(x %*% beta) + offset[[1L]]
-    sigma <- exp(drop(z %*% gamma)) + offset[[2L]]
+    zgamma <- drop(z %*% gamma) + offset[[2L]]
+    sigma <- linkinv(zgamma)
     df <- if(dfest) exp(delta) else df
     list(
       beta = beta,
       gamma = gamma,
       delta = delta,
       mu = mu,
+      zgamma = zgamma,
       sigma = sigma,
       df = df
     )
   }
-
   ## objective function
   loglikfun <- function(par) {
     fit <- fitfun(par)
-    ll <- with(fit, ifelse(y <= left, pdist(left, mu, sigma, df, lower.tail = TRUE),
-      ifelse(y >= right, pdist(right, mu, sigma, df, lower.tail = FALSE),
-      ddist(y, mu, sigma, df))))
-
-    return(-sum(weights * ll))
+    ll <- with(fit,  
+        ddist(y, mu, sigma, df = df, left = left, right = right, log = TRUE))
+    if(any(!is.finite(ll))) NaN else -sum(weights * ll)  
   }
-
-  opt <- suppressWarnings(optim(par = start, fn = loglikfun, method = method, hessian = hessian, control = control))
+  ## functions to evaluate gradients and hessian
+  if(dfest | is.null(sdist)) {
+    gradfun <- NULL
+  } else { 
+    gradfun <- function(par, type = "gradient") {
+      fit <- fitfun(par)
+      grad <- with(fit, 
+        sdist(y, mu, sigma, df = df, left = left, right = right))
+      grad <- cbind(grad[,1]*x, grad[,2] * mu.eta(fit$zgamma) * z)
+      return(-colSums(weights * grad))
+    }
+    hessfun <- function(par) {
+      fit <- fitfun(par)
+      hess <- with(fit, hdist(y, mu, sigma, left = left, right = right,
+        df = df, which = c("mu", "sigma", "mu.sigma", "sigma.mu")))
+      grad <- with(fit, sdist(y, mu, sigma, left = left, right = right, 
+        df = df, which = "sigma"))
+      hess[, "d2sigma"] <- hess[, "d2sigma"]*mu.eta(fit$zgamma)^2 + grad*dmu.deta(fit$zgamma)
+      hess[, "dmu.dsigma"] <- hess[, "dsigma.dmu"] <- hess[, "dmu.dsigma"]*mu.eta(fit$zgamma)
+      hessmu <- crossprod(hess[,"d2mu"]*x, x)
+      hessmusigma <- crossprod(hess[,"dmu.dsigma"]*x, z)
+      hesssigmamu <- crossprod(hess[,"dsigma.dmu"]*z, x)
+      hesssigma <- crossprod(hess[,"d2sigma"]*z, z)
+      -cbind(rbind(hessmu, hesssigmamu), rbind(hessmusigma, hesssigma))
+    }
+  }
+  opt <- suppressWarnings(optim(par = start, fn = loglikfun, gr = gradfun,
+    method = method, hessian = hessian, control = control))
   if(opt$convergence > 0) {
     converged <- FALSE
     warning("optimization failed to converge")
   } else {
     converged <- TRUE
   }
-
   par <- opt$par
   fit <- fitfun(par)
   beta <- fit$beta
@@ -228,7 +346,8 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
   delta <- fit$delta
   mu <- fit$mu
   sigma <- fit$sigma
-  vcov <- if (hessian) solve(as.matrix(opt$hessian)) else NULL
+  vcov <- if (hessian) solve(as.matrix(opt$hessian)) 
+    else solve(hessfun(par))
   ll <- -opt$value
   df <- if(dfest) exp(delta) else df
 
@@ -253,12 +372,15 @@ crch.fit <- function(x, z, y, left, right, dist = "student", df = NULL,
     control = ocontrol,
     start = start,  
     weights = if(identical(as.vector(weights), rep.int(1, n))) NULL else weights,
-    offset = list(location = if(identical(offset[[1L]], rep.int(0, n))) NULL else offset[[1L]],
+    offset = list(location = if(identical(offset[[1L]], rep.int(0, n))) NULL else 
+      offset[[1L]],
+    scale = if(identical(offset[[2L]], rep.int(0, n))) NULL else offset[[2L]]),
     n = n,
     nobs = nobs,
-    scale = if(identical(offset[[2L]], rep.int(0, n))) NULL else offset[[2L]]),
     loglik = ll,
     vcov = vcov,
+    link = list(scale = linkobj),
+    truncated = truncated,
     converged = converged,
     iterations = as.vector(tail(na.omit(opt$counts), 1))
   )
@@ -279,7 +401,7 @@ print.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
        cat("\n")
     } else cat("No coefficients (in location model)\n\n")
     if(length(x$coefficients$scale)) {
-      cat(paste("Coefficients (scale model with log link):\n", sep = ""))
+      cat(paste("Coefficients (scale model with ", x$link$scale$name, " link):\n", sep = ""))
       print.default(format(x$coefficients$scale, digits = digits), print.gap = 2, quote = FALSE)
       cat("\n")
     } else cat("No coefficients (in scale model)\n\n")
@@ -343,9 +465,9 @@ print.summary.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
     } else cat("\nNo coefficients (in location model)\n")
 
     if(NROW(x$coefficients$scale)) {
-      cat(paste("\nCoefficients (log(scale) model):\n", sep = ""))
+      cat(paste("\nCoefficients (scale model with ", x$link$scale$name, " link):\n", sep = ""))
       printCoefmat(x$coefficients$scale, digits = digits, signif.legend = FALSE)
-    } else cat("\nNo coefficients (in log(scale) model)\n")
+    } else cat("\nNo coefficients ( in scale model)\n")
 
     if(getOption("show.signif.stars") & any(do.call("rbind", x$coefficients)[, 4L] < 0.1))
       cat("---\nSignif. codes: ", "0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1", "\n")
@@ -366,50 +488,48 @@ terms.crch <- function(x, model = c("location", "scale", "full"), ...) x$terms[[
 
 fitted.crch <- function(object, type = c("location", "scale"), ...) object$fitted.values[[match.arg(type)]]
 
+
+
 predict.crch <- function(object, newdata = NULL,
   type = c("response", "location", "scale", "quantile"), na.action = na.pass, at = 0.5, ...)
 {
   type <- match.arg(type)
   ## response/location are synonymous
   if(type == "location") type <- "response"
-  ## currently all distributions supported are symmetric, hence:
+  
+  ## type quantile not available for user defined distributions
+  if(type == "quantile" & identical(object$dist, "user defined"))
+    stop("type quantile not available for user defined distributions")
+  ## currently all other distributions supported are symmetric, hence:
   if(type == "quantile" & identical(at, 0.5)) type <- "response"
   
   if(type == "quantile") {
-    qdist <- switch(object$dist,
-    "student"  = function(at, location, scale, df) {
-      rval <- sapply(at, function(p) qt(p, df = df) * scale + location)
+    if(object$truncated) {
+      qdist2 <- switch(object$dist, 
+        "student"  = qtt, 
+        "gaussian" = function(..., df) qtnorm(...), 
+        "logistic" = function(..., df) qtlogis(...))
+    } else {
+      qdist2 <- switch(object$dist, 
+        "student"  = qct, 
+        "gaussian" = function(..., df) qcnorm(...), 
+        "logistic" = function(..., df) qclogis(...))
+    }
+    
+
+
+    qdist <- function(at, location, scale, df) {
+      rval <- sapply(at, function(p) qdist2(p, location, scale, 
+        df = df, left = object$cens$left, right = object$cens$right))
       if(length(at) > 1L) {
         if(NCOL(rval) == 1L) rval <- matrix(rval, ncol = length(at),
-	  dimnames = list(unique(names(rval)), NULL))
-        colnames(rval) <- paste("q_", at, sep = "")
-      } else {
-        rval <- drop(rval)
-      }
-      rval
-    },
-    "gaussian" = function(at, location, scale, df) {
-      rval <- sapply(at, function(p) qnorm(p) * scale + location)
-      if(length(at) > 1L) {
-        if(NCOL(rval) == 1L) rval <- matrix(rval, ncol = length(at),
-	  dimnames = list(unique(names(rval)), NULL))
+	        dimnames = list(unique(names(rval)), NULL))
         colnames(rval) <- paste("q_", at, sep = "")
       } else {
         rval <- drop(rval)
       }
       rval 
-    },
-    "logistic" = function(at, location, scale, df) {
-      rval <- sapply(at, function(p) qlogis(p) * scale + location)
-      if(length(at) > 1L) {
-        if(NCOL(rval) == 1L) rval <- matrix(rval, ncol = length(at),
-	  dimnames = list(unique(names(rval)), NULL))
-        colnames(rval) <- paste("q_", at, sep = "")
-      } else {
-        rval <- drop(rval)
-      }
-      rval
-    })
+    }
   }
   
   if(missing(newdata)) {
@@ -527,43 +647,74 @@ vcov.crch <- function(object, model = c("full", "location", "scale", "df"), ...)
 
 logLik.crch <- function(object, ...) structure(object$loglik, df = sum(sapply(object$coefficients, length)), class = "logLik")
 
-residuals.crch <- function(object, type = c("standardized", "pearson", "response"), ...) {
-  if(match.arg(type) == "response") object$residuals else object$residuals/object$fitted.values$scale
+residuals.crch <- function(object, type = c("standardized", "pearson", "response", "quantile"), ...) {
+  if(match.arg(type) == "response") {
+    object$residuals 
+  } else if (match.arg(type) == "quantile") {
+    if(object$truncated) {
+      pdist <- switch(object$dist, 
+        "student"  = function(q, mean, sd) ptt(q, mean, sd, df = object$df), 
+        "gaussian" = ptnorm, 
+        "logistic" = ptlogis)
+    } else {
+      pdist <- switch(object$dist, 
+        "student"  = function(q, mean, sd) pct(q, mean, sd, df = object$df), 
+        "gaussian" = pcnorm, 
+        "logistic" = pclogis)
+    }
+    qprob <- with(object, ifelse(residuals + fitted.values$location == cens$left,
+      runif(n, 0, pdist(cens$left, fitted.values$location, fitted.values$scale)),
+      ifelse(residuals + fitted.values$location == cens$right,
+        runif(n, pdist(cens$right, fitted.values$location, fitted.values$scale), 1),
+        pdist(residuals, 0, fitted.values$scale))))
+    qnorm(qprob)
+  } else object$residuals/object$fitted.values$scale
 }
 
-if(FALSE) {
-  ## load code and data
-  library("zoo")
-  library("AER")
-  load("Neuhof_24.RData")
-  # load("pottenbrunn_24.RData")
-  source("transform.R")
-  source("crch.R")
 
-  ## transform data
-  d <- as.data.frame(turbine.data)
-  p2w <- make_p2w(pc)
-  w2p <- make_w2p(pc)
-  d$wnow <- p2w(d$pnow)
-  d <- d[order(d$fflin),]
 
-  ## fit models
-  mg <- crch(wnow ~ fflin | 1, data = d, dist = "gaussian", left = 3, right = 17)
-  ml <- crch(wnow ~ fflin | 1, data = d, dist = "logistic", left = 3, right = 17)
-  ms <- crch(wnow ~ fflin | 1, data = d, dist = "student",  left = 3, right = 17)
+getSummary.crch <- function (obj, alpha = 0.05, ...) 
+{
+  cf <- summary(obj)$coefficients
+  cval <- qnorm(1 - alpha/2)
+  for (i in seq_along(cf)) cf[[i]] <- cbind(cf[[i]], 
+      cf[[i]][, 1] - cval * cf[[i]][, 2],
+      cf[[i]][, 1] + cval * cf[[i]][, 2])
+  nam <- unique(unlist(lapply(cf, rownames)))
+  acf <- array(dim = c(length(nam), 6, length(cf)), 
+    dimnames = list(nam, c("est", "se", "stat", "p", "lwr", "upr"), names(cf)))
+  for (i in seq_along(cf)) acf[rownames(cf[[i]]), , i] <- cf[[i]]
 
-  ## visualize fitted means (virtually identical)
-  plot(wnow ~ fflin, data = d)
-  abline(coef(mg, "location"))
-  abline(coef(ml, "location"), col = 2)
-  abline(coef(ms, "location"), col = 4)
-
-  ## visualize fitted densities (gaussian differen, student and logistic similar)
-  x <- seq(-6, 6, by = 0.1)
-  plot(x, dt(x/exp(coef(ms, "scale")), df = exp(ms$coefficients$df))/exp(coef(ms, "scale")), type = "l", col = 4)
-  lines(x, dnorm(x/exp(coef(mg, "scale")))/exp(coef(mg, "scale")), col = 1)
-  lines(x, dlogis(x/exp(coef(ml, "scale")))/exp(coef(ml, "scale")), col = 2)
-
-  ## likelihood ratio test between student and gaussian model
-  lrtest(mg, ms)
+  return(list(
+    coef = acf, 
+    sumstat = c(
+      N = obj$n, 
+      logLik = as.vector(logLik(obj)), 
+      AIC = AIC(obj), 
+      BIC = BIC(obj)
+    ), 
+    contrasts = obj$contrasts, 
+    xlevels = obj$xlevels, 
+    call = obj$call))
 }
+
+
+update.crch <- function (object, formula., ..., evaluate = TRUE)
+{
+  call <- object$call
+  if(is.null(call)) stop("need an object with call component")
+  extras <- match.call(expand.dots = FALSE)$...
+  if(!missing(formula.)) call$formula <- formula(update(Formula(formula(object)), formula.))
+  if(length(extras)) {
+    existing <- !is.na(match(names(extras), names(call)))
+    for (a in names(extras)[existing]) call[[a]] <- extras[[a]]
+    if(any(!existing)) {
+      call <- c(as.list(call), extras[!existing])
+      call <- as.call(call)
+    }
+  }
+  if(evaluate) eval(call, parent.frame())
+  else call
+}
+
+

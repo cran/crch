@@ -2,10 +2,35 @@ import("stats", "Formula")
 
 export(
   "crch",
+  "trch",
   "crch.control",
   "crch.fit",
   "hxlr",
-  "hxlr.control"
+  "hxlr.control",
+  "dcnorm",
+  "pcnorm",
+  "qcnorm",
+  "rcnorm",
+  "dclogis",
+  "pclogis",
+  "qclogis",
+  "rclogis",
+  "dct",
+  "pct",
+  "qct",
+  "rct",
+  "dtnorm",
+  "ptnorm",
+  "qtnorm",
+  "rtnorm",
+  "dtlogis",
+  "ptlogis",
+  "qtlogis",
+  "rtlogis",
+  "dtt",
+  "ptt",
+  "qtt",
+  "rtt"
 )
 
 ## methods for crch
@@ -19,6 +44,7 @@ S3method("residuals", "crch")
 S3method("summary", "crch")
 S3method("terms", "crch")
 S3method("vcov", "crch")
+S3method("update", "crch")
 
 ## methods for hxlr
 S3method("logLik", "hxlr")
