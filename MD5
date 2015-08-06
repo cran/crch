@@ -1,9 +1,9 @@
-9cf949a2410913f008b3dcf1d80be42a *DESCRIPTION
-81aa7eba43754e04957ed6f67d1f00ce *NAMESPACE
-ff76d636af7019e3e321fef1a47a6f2a *NEWS
+91a24901ed7287cb62cae5b0f7c7da97 *DESCRIPTION
+bc3ffe38b8d83e02dca26395ec39850b *NAMESPACE
+c8690cad451c929f45c9ef4415cbd22b *NEWS
 c347225df025bd7367f3aa27d9d157f3 *R/clogis.R
 01a73358c4a32640a75fde31f18c559e *R/cnorm.R
-e7d1017feac08e3b196aa3f7f1887b24 *R/crch.R
+7e85584891bf149bc6343e739b2d981a *R/crch.R
 c4c84fedb495356ac6babd691ea4ba3a *R/ct.R
 52e2742e757603ed9488e55bccada62a *R/hxlr.R
 8359f4404b376a00528f8e066ff05fbc *R/tlogis.R
@@ -14,11 +14,11 @@ b9bcbd1dee14b6add40e36c90eb463b7 *data/RainIbk.rda
 82409f1a6fb2a3f2664a35f490943b3d *inst/CITATION
 41045d5187fada3a63d97541d106da3c *inst/doc/crch.R
 8bde667a7bda31e561ea55c74f197963 *inst/doc/crch.Rnw
-eb662b0f511f72ad86cbee8c75e1ab88 *inst/doc/crch.pdf
+eceffa95917ae57400ee768f9b0a5fad *inst/doc/crch.pdf
 1496dc130933bca20e3a43468aae0c3b *man/RainIbk.Rd
 6e5b666084c3ae0ccdb9604cabb8851b *man/clogis.Rd
 6c3ae78da7e36d47002354f83472abb8 *man/cnorm.Rd
-9f62dcd1a2a00286788711a817cdb420 *man/coef.crch.Rd
+a52e8eb137277539e0ca3535f12ca8ac *man/coef.crch.Rd
 11ff3b862bcabd2c51299b915e744ef4 *man/coef.hxlr.Rd
 0e272f954a4b84021e1dbdf64580fa5a *man/crch.Rd
 56e214da995b86051bf14af19bceedc1 *man/crch.control.Rd
