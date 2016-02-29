@@ -26,7 +26,7 @@ RainIbk <- subset(RainIbk, enssd > 0)
 ###################################################
 ### code chunk number 4: crch.Rnw:369-371
 ###################################################
-plot(rain~ensmean, data = RainIbk, pch = 19, col = gray(0, alpha = 0.2))
+plot(rain ~ ensmean, data = RainIbk, pch = 19, col = gray(0, alpha = 0.2))
 abline(0,1, col = "red")
 
 
@@ -85,7 +85,7 @@ legend("topright", lwd = c(2,2,1), lty = c(1,2,1), col = c(1,2,4), c("student-t"
 
 
 ###################################################
-### code chunk number 11: crch.Rnw:454-459
+### code chunk number 11: crch.Rnw:457-462
 ###################################################
 library("glmx")
 BIN <- hetglm(I(rain > 0) ~ ensmean | log(enssd), data = RainIbk,
@@ -95,7 +95,7 @@ TRCH <- crch(rain~ensmean | log(enssd), data = RainIbk, subset = rain > 0,
 
 
 ###################################################
-### code chunk number 12: crch.Rnw:466-471
+### code chunk number 12: crch.Rnw:469-474
 ###################################################
 cbind("CRCH" = c(coef(CRCH, "location")/exp(coef(CRCH, "scale"))[1], 
         coef(CRCH, "scale")[2]), 
@@ -105,7 +105,7 @@ cbind("CRCH" = c(coef(CRCH, "location")/exp(coef(CRCH, "scale"))[1],
 
 
 ###################################################
-### code chunk number 13: crch.Rnw:478-483
+### code chunk number 13: crch.Rnw:481-486
 ###################################################
 loglik <- c("Censored" = logLik(CRCH), "Two-Part" = logLik(BIN) + logLik(TRCH))
 df <- c(4, 7)
@@ -115,21 +115,21 @@ cbind(df, AIC = aic, BIC = bic)
 
 
 ###################################################
-### code chunk number 14: crch.Rnw:521-523
+### code chunk number 14: crch.Rnw:494-496
 ###################################################
 newdata <- data.frame(ensmean = 1.8, enssd = 0.9)
 predict(CRCH, newdata, type = "quantile", at = 0.5)^2
 
 
 ###################################################
-### code chunk number 15: crch.Rnw:534-536
+### code chunk number 15: crch.Rnw:507-509
 ###################################################
 p <- predict(BIN, newdata)
 predict(TRCH, newdata, type = "quantile", at = (p - 0.5)/p)^2
 
 
 ###################################################
-### code chunk number 16: crch.Rnw:543-550
+### code chunk number 16: crch.Rnw:516-523
 ###################################################
 mu <- predict(CRCH, newdata, type = "location")
 sigma <- predict(CRCH, newdata, type = "scale")

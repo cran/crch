@@ -109,10 +109,12 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   offset <- list(location = offsetX, scale = offsetZ)
  
 
-  ## call the actual workhorse: crch.fit()
-  rval <- crch.fit(x = X, y = Y, z = Z, left = left, right = right, 
-    link.scale = link.scale, dist = dist, df = df, weights = weights, 
-    offset = offset, control = control, truncated = truncated)
+  ## call the actual workhorse: crch.fit() or crch.boost()
+  fit <- control$fit
+  control$fit <- NULL
+  rval <- do.call(fit, list(x = X, y = Y, z = Z, left = left, right = right, 
+      link.scale = link.scale, dist = dist, df = df, weights = weights, 
+      offset = offset, control = control, truncated = truncated))
   
 
   ## further model information
@@ -126,7 +128,6 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   if(y) rval$y <- Y
   if(x) rval$x <- list(location = X, scale = Z)
 
-  class(rval) <- "crch"
   return(rval)
 }
 
@@ -146,15 +147,21 @@ trch <- function(formula, data, subset, na.action, weights, offset,
   eval(cl2)
 }
 
-crch.control <- function(method = "BFGS", maxit = 5000, hessian = NULL, trace = FALSE, 
-  start = NULL, dot = "separate", ...)
+crch.control <- function(method = "BFGS", maxit = NULL, 
+  hessian = NULL, trace = FALSE, start = NULL, dot = "separate", ...)
 {
-  rval <- list(method = method, maxit = maxit, hessian = hessian, trace = trace, 
-    start = start, dot = dot)
-  rval <- c(rval, list(...))
-  if(!is.null(rval$fnscale)) warning("fnscale must not be modified")
-  rval$fnscale <- 1
-  if(is.null(rval$reltol)) rval$reltol <- .Machine$double.eps^(1/1.2)
+  if(method == "boosting") {
+    if(is.null(maxit)) maxit <- 100
+    rval <- crch.boost(dot = dot, start = start, maxit = maxit, ...)
+  } else {
+    if(is.null(maxit)) maxit <- 5000
+    rval <- list(method = method, maxit = maxit, hessian = hessian, trace = trace, 
+      start = start, dot = dot, fit = "crch.fit")
+    rval <- c(rval, list(...))
+    if(!is.null(rval$fnscale)) warning("fnscale must not be modified")
+    rval$fnscale <- 1
+    if(is.null(rval$reltol)) rval$reltol <- .Machine$double.eps^(1/1.2)
+  }
   rval
 }
 
@@ -220,19 +227,18 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     sdist <- if(is.null(dist$sdist)) NULL else  dist$sdist
     if(is.null(dist$hdist)) {
       if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
-      hessian <- TRUE  
-    
-    } else dist$hdist 
+      hessian <- TRUE     
+    } else hdist <- dist$hdist 
     dist <- "user defined"
   }
 
   ## analytic or numeric Hessian
-  if(is.null(hessian)) hessian <- if(dfest) TRUE else FALSE
-  if(!hessian & dfest) {
-    warning("No analytical Hessian can be derived if df is estimated. hessian is set to TRUE")
-    hessian <- TRUE
-  }
-
+  if(is.null(hessian)) {
+    hessian <- dfest
+    returnvcov <- TRUE  # vcov is not computed when hessian == FALSE
+  } else {
+    returnvcov <- hessian
+  } 
 
   ## link
   if(is.character(link.scale)) {
@@ -256,7 +262,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     linkobj <- link.scale
     linkstr <- link.scale$name
     if(is.null(linkobj$dmu.deta) & !hessian) {
-      warning("link.scale needs to provide dmu.deta component for analytical Hessian. hessian is set to TRUE to employ numerical Hessian.")
+      warning("link.scale needs to provide dmu.deta component for analytical Hessian. Numerical Hessian is employed.")
       hessian <- TRUE
     }
   }
@@ -324,6 +330,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
         df = df, which = "sigma"))
       hess[, "d2sigma"] <- hess[, "d2sigma"]*mu.eta(fit$zgamma)^2 + grad*dmu.deta(fit$zgamma)
       hess[, "dmu.dsigma"] <- hess[, "dsigma.dmu"] <- hess[, "dmu.dsigma"]*mu.eta(fit$zgamma)
+      hess <- weights*hess
       hessmu <- crossprod(hess[,"d2mu"]*x, x)
       hessmusigma <- crossprod(hess[,"dmu.dsigma"]*x, z)
       hesssigmamu <- crossprod(hess[,"dsigma.dmu"]*z, x)
@@ -346,14 +353,16 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
   delta <- fit$delta
   mu <- fit$mu
   sigma <- fit$sigma
-  vcov <- if (hessian) solve(as.matrix(opt$hessian)) 
+  vcov <- if(returnvcov) {
+    if (hessian) solve(as.matrix(opt$hessian)) 
     else solve(hessfun(par))
+  } else matrix(NA, k+q+dfest, n+k+dfest)
   ll <- -opt$value
   df <- if(dfest) exp(delta) else df
 
   names(beta) <- colnames(x)
   names(gamma) <- colnames(z)
-  if (hessian) {
+  if (returnvcov) {
     colnames(vcov) <- rownames(vcov) <- c(
       colnames(x),
       paste("(scale)", colnames(z), sep = "_"),
@@ -469,7 +478,7 @@ print.summary.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
       printCoefmat(x$coefficients$scale, digits = digits, signif.legend = FALSE)
     } else cat("\nNo coefficients ( in scale model)\n")
 
-    if(getOption("show.signif.stars") & any(do.call("rbind", x$coefficients)[, 4L] < 0.1))
+    if(getOption("show.signif.stars") & any(do.call("rbind", x$coefficients)[, 4L] < 0.1, na.rm = TRUE))
       cat("---\nSignif. codes: ", "0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1", "\n")
 
     cat(paste("\nDistribution: ", x$dist, "\n", sep = ""))
@@ -503,7 +512,7 @@ model.matrix.crch <- function(object, model = c("location", "scale"), ...) {
 fitted.crch <- function(object, type = c("location", "scale"), ...) object$fitted.values[[match.arg(type)]]
 
 predict.crch <- function(object, newdata = NULL,
-  type = c("response", "location", "scale", "quantile"), na.action = na.pass, at = 0.5, ...)
+  type = c("response", "location", "scale", "quantile"), na.action = na.pass, at = 0.5, left = NULL, right = NULL, ...)
 {
   type <- match.arg(type)
   ## response/location are synonymous
@@ -512,8 +521,17 @@ predict.crch <- function(object, newdata = NULL,
   ## type quantile not available for user defined distributions
   if(type == "quantile" & identical(object$dist, "user defined"))
     stop("type quantile not available for user defined distributions")
-  ## currently all other distributions supported are symmetric, hence:
-  if(type == "quantile" & identical(at, 0.5)) type <- "response"
+
+  if(type == "quantile" & !is.null(newdata)){
+      if(length(object$cens$left) > 1) {
+        if(is.null(left)) stop("left has to be specified for non-constant left censoring")
+        if(length(left) > 1 & length(left) != NROW(newdata)) stop("left must have length 1 or length of newdata")
+      }
+      if(length(object$cens$right) > 1) {
+        if(is.null(right)) stop("right has to be specified for non-constant right censoring")
+        if(length(right) > 1 & length(right) != NROW(newdata)) stop("right  must have length 1 or length of newdata")
+      }
+    }
   
   if(type == "quantile") {
     if(object$truncated) {
@@ -528,11 +546,12 @@ predict.crch <- function(object, newdata = NULL,
         "logistic" = function(..., df) qclogis(...))
     }
     
-
+    if(is.null(left)) left <- object$cens$left
+    if(is.null(right)) right <- object$cens$right
 
     qdist <- function(at, location, scale, df) {
       rval <- sapply(at, function(p) qdist2(p, location, scale, 
-        df = df, left = object$cens$left, right = object$cens$right))
+        df = df, left = left, right = right))
       if(length(at) > 1L) {
         if(NCOL(rval) == 1L) rval <- matrix(rval, ncol = length(at),
 	        dimnames = list(unique(names(rval)), NULL))
@@ -560,7 +579,6 @@ predict.crch <- function(object, newdata = NULL,
     return(rval)
 
   } else {
-
     tnam <- switch(type,
       "response" = "location",
       "scale" = "scale",
@@ -619,10 +637,10 @@ coef.crch <- function(object, model = c("full", "location", "scale", "df"), ...)
       cf$df
     },
     "full" = {
-      nam1 <- names(cf$location)
-      nam2 <- names(cf$scale)
+      nam <- c(names(cf$location), paste("(scale)", names(cf$scale), sep = "_"))
+      if(length(cf$df)) nam <- c(nam, "(Log(df))")
       cf <- c(cf$location, cf$scale, cf$df)
-      names(cf) <- colnames(object$vcov)
+      names(cf) <- nam
       cf
     }
   )

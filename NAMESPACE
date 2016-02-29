@@ -1,5 +1,7 @@
+useDynLib(crch)
 import("stats", "Formula")
 importFrom("utils", "tail")
+importFrom("graphics", "abline", "axis", "par", "plot", "strwidth")
 
 export(
   "crch",
@@ -31,7 +33,9 @@ export(
   "dtt",
   "ptt",
   "qtt",
-  "rtt"
+  "rtt",
+  "crch.boost",
+  "crch.boost.fit"
 )
 
 ## methods for crch
@@ -48,6 +52,14 @@ S3method("vcov", "crch")
 S3method("update", "crch")
 S3method("model.frame", "crch")
 S3method("model.matrix", "crch")
+
+S3method("plot", "crch.boost")
+S3method("coef", "crch.boost")
+S3method("logLik", "crch.boost")
+S3method("predict", "crch.boost")
+S3method("print", "crch.boost")
+S3method("summary", "crch.boost")
+S3method("print", "summary.crch.boost")
 
 ## methods for hxlr
 S3method("logLik", "hxlr")
