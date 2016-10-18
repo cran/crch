@@ -109,7 +109,7 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   offset <- list(location = offsetX, scale = offsetZ)
  
 
-  ## call the actual workhorse: crch.fit() or crch.boost()
+  ## call the actual workhorse: crch.fit() or crch.boost.fit()
   fit <- control$fit
   control$fit <- NULL
   rval <- do.call(fit, list(x = X, y = Y, z = Z, left = left, right = right, 
@@ -148,7 +148,8 @@ trch <- function(formula, data, subset, na.action, weights, offset,
 }
 
 crch.control <- function(method = "BFGS", maxit = NULL, 
-  hessian = NULL, trace = FALSE, start = NULL, dot = "separate", ...)
+  hessian = NULL, trace = FALSE, start = NULL, dot = "separate",
+  lower = -Inf, upper = Inf, ...)
 {
   if(method == "boosting") {
     if(is.null(maxit)) maxit <- 100
@@ -156,7 +157,7 @@ crch.control <- function(method = "BFGS", maxit = NULL,
   } else {
     if(is.null(maxit)) maxit <- 5000
     rval <- list(method = method, maxit = maxit, hessian = hessian, trace = trace, 
-      start = start, dot = dot, fit = "crch.fit")
+      start = start, dot = dot,lower=lower,upper=upper, fit = "crch.fit")
     rval <- c(rval, list(...))
     if(!is.null(rval$fnscale)) warning("fnscale must not be modified")
     rval$fnscale <- 1
@@ -190,10 +191,12 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
 
   ## control parameters
   ocontrol <- control
-  method <- control$method
-  hessian <- control$hessian
-  start <- control$start
-  control$method <- control$hessian <- control$start <- NULL
+  method   <- control$method
+  hessian  <- control$hessian
+  start    <- control$start
+  lower    <- control$lower
+  upper    <- control$upper
+  control$method <- control$hessian <- control$start <- control$lower <- control$upper <- NULL
 
   
 
@@ -229,7 +232,6 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
       if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
       hessian <- TRUE     
     } else hdist <- dist$hdist 
-    dist <- "user defined"
   }
 
   ## analytic or numeric Hessian
@@ -339,7 +341,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     }
   }
   opt <- suppressWarnings(optim(par = start, fn = loglikfun, gr = gradfun,
-    method = method, hessian = hessian, control = control))
+    method = method, hessian = hessian, control = control,lower=lower,upper=upper))
   if(opt$convergence > 0) {
     converged <- FALSE
     warning("optimization failed to converge")
@@ -414,7 +416,8 @@ print.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
       print.default(format(x$coefficients$scale, digits = digits), print.gap = 2, quote = FALSE)
       cat("\n")
     } else cat("No coefficients (in scale model)\n\n")
-    cat(paste("Distribution: ", x$dist, "\n", sep = ""))
+    dist <- if(is.character(x$dist)) x$dist else "user defined"
+    cat(paste("Distribution: ", dist, "\n", sep = ""))
     if(length(x$df)) {
       cat(paste("Df: ", format(x$df, digits = digits), "\n", sep = ""))
     }
@@ -480,8 +483,8 @@ print.summary.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
 
     if(getOption("show.signif.stars") & any(do.call("rbind", x$coefficients)[, 4L] < 0.1, na.rm = TRUE))
       cat("---\nSignif. codes: ", "0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1", "\n")
-
-    cat(paste("\nDistribution: ", x$dist, "\n", sep = ""))
+    dist <- if(is.character(x$dist)) x$dist else "user defined"
+    cat(paste("\nDistribution: ", dist, "\n", sep = ""))
     if(length(x$df)) {
       cat(paste("Df: ", format(x$df, digits = digits), "\n", sep = ""))
     }
@@ -519,7 +522,7 @@ predict.crch <- function(object, newdata = NULL,
   if(type == "location") type <- "response"
   
   ## type quantile not available for user defined distributions
-  if(type == "quantile" & identical(object$dist, "user defined"))
+  if(type == "quantile" & !is.character(object$dist))
     stop("type quantile not available for user defined distributions")
 
   if(type == "quantile" & !is.null(newdata)){
@@ -681,6 +684,8 @@ residuals.crch <- function(object, type = c("standardized", "pearson", "response
   if(match.arg(type) == "response") {
     object$residuals 
   } else if (match.arg(type) == "quantile") {
+    if(!is.character(object$dist)) stop("quantile residuals not available for
+      user defined distributions")
     if(object$truncated) {
       pdist <- switch(object$dist, 
         "student"  = function(q, mean, sd) ptt(q, mean, sd, df = object$df), 
@@ -746,5 +751,60 @@ update.crch <- function (object, formula., ..., evaluate = TRUE)
   if(evaluate) eval(call, parent.frame())
   else call
 }
+
+
+estfun.crch <- function(x, ...) {
+  ## extract response y and regressors X and Z
+  y <- if(is.null(x$y)) model.response(model.frame(x)) else x$y
+  xmat <- if(is.null(x$x)) model.matrix(x, model = "location") else x$x$location
+  zmat <- if(is.null(x$x)) model.matrix(x, model = "scale") else x$x$scale
+  offset <- x$offset
+  if(is.null(offset[[1L]])) offset[[1L]] <- rep.int(0, NROW(xmat))
+  if(is.null(offset[[2L]])) offset[[2L]] <- rep.int(0, NROW(zmat))
+  wts <- weights(x)
+  if(is.null(wts)) wts <- 1
+
+  df <- x$df
+  if(!is.null(x$coefficients$df)) stop("score function not available for 
+    student-t distribution with estimated degrees of freedom")
+  left <- x$cens$left
+  right <- x$cens$right
+  link.scale <- x$link$scale
+  
+
+  ## extract coefficients
+  beta <- x$coefficients$location
+  gamma <- x$coefficients$scale
+
+  ## compute mu, z%*%gamma, and sigma
+  mu <- drop(xmat %*% beta) + offset[[1L]]
+  zgamma <- drop(zmat %*% gamma) + offset[[2L]]
+  sigma <- link.scale$linkinv(zgamma)
+
+  ## extract sdist function
+  if(is.character(x$dist)){
+    ## distribution functions
+    if(x$truncated) {
+      sdist2 <- switch(x$dist, 
+        "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
+    } else {
+      sdist2 <- switch(x$dist, 
+        "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
+    }
+    sdist <- if(x$dist == "student") sdist2 else function(..., df) sdist2(...)
+  } else { 
+    sdist <- if(is.null(x$dist$sdist)) stop("score function not available")
+      else  x$dist$sdist
+  }
+
+
+  ## compute scores of beta
+  rval <- sdist(y, mu, sigma, df = df, left = left, right = right)
+  rval <- cbind(rval[,1]*xmat, rval[,2] * link.scale$mu.eta(zgamma) * zmat)
+
+  
+  return(rval)
+}
+
 
 

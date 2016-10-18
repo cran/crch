@@ -9,7 +9,8 @@
 }
 \usage{
 crch.control(method = "BFGS", maxit = NULL, hessian = NULL,
-  trace = FALSE, start = NULL, dot = "separate", \dots)}
+  trace = FALSE, start = NULL, dot = "separate",
+  lower = -Inf, upper = Inf, \dots)}
 \arguments{
   \item{method}{optimization method passed to \code{\link{optim}}}
   \item{maxit}{the maximum number of iterations. Default is 5000 except for 
@@ -30,7 +31,9 @@ crch.control(method = "BFGS", maxit = NULL, hessian = NULL,
     so that each formula part is expanded separately or \code{"sequential"}
     so that the parts are expanded sequentially conditional on all prior parts.
     Default is \code{"separate"}}
-  \item{\dots}{Additional parameters passed to \code{\link{optim}}. }
+  \item{lower, upper}{bounds on the variables for the \code{"L-BFGS-B"} method,
+    or bounds in which to search for method \code{"Brent"}.}
+  \item{\dots}{additional parameters passed to \code{\link{optim}}. }
 }
 
 \value{
