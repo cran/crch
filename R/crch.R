@@ -1,8 +1,8 @@
 crch <- function(formula, data, subset, na.action, weights, offset, 
   link.scale = c("log", "identity", "quadratic"), 
   dist = c("gaussian", "logistic", "student"), df = NULL,
-  left = -Inf, right = Inf, truncated = FALSE , control = crch.control(...),
-  model = TRUE, x = FALSE, y = FALSE, ...)
+  left = -Inf, right = Inf, truncated = FALSE, type = c("ml", "crps"), 
+  control = crch.control(...), model = TRUE, x = FALSE, y = FALSE, ...)
 {
   ## call
   cl <- match.call()
@@ -75,6 +75,9 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   ## distribution
   if(is.character(dist)) dist <- match.arg(dist)
 
+  ## type
+  if(is.character(type)) type <- match.arg(type)
+
   ## sanity checks
   if(length(Y) < 1) stop("empty model")
   if(identical(dist, "student")) {
@@ -114,7 +117,7 @@ crch <- function(formula, data, subset, na.action, weights, offset,
   control$fit <- NULL
   rval <- do.call(fit, list(x = X, y = Y, z = Z, left = left, right = right, 
       link.scale = link.scale, dist = dist, df = df, weights = weights, 
-      offset = offset, control = control, truncated = truncated))
+      offset = offset, control = control, truncated = truncated, type = type))
   
 
   ## further model information
@@ -135,8 +138,8 @@ crch <- function(formula, data, subset, na.action, weights, offset,
 trch <- function(formula, data, subset, na.action, weights, offset,
   link.scale = c("log", "identity", "quadratic"), 
   dist = c("gaussian", "logistic", "student"), df = NULL,
-  left = -Inf, right = Inf, truncated = TRUE , control = crch.control(...),
-  model = TRUE, x = FALSE, y = FALSE, ...) 
+  left = -Inf, right = Inf, truncated = TRUE, type = c("ml", "crps"), 
+  control = crch.control(...), model = TRUE, x = FALSE, y = FALSE, ...) 
 {
   cl <- match.call()
   cl2 <- cl
@@ -168,7 +171,7 @@ crch.control <- function(method = "BFGS", maxit = NULL,
 
 
 crch.fit <- function(x, z, y, left, right, truncated = FALSE, 
-  dist = "gaussian", df = NULL, link.scale = "log",
+  dist = "gaussian", df = NULL, link.scale = "log", type = "ml",
   weights = NULL, offset = NULL, control = crch.control()) 
 {
   ## response and regressor matrix
@@ -201,35 +204,95 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
   
 
   if(is.character(dist)){
-    ## distribution functions
-    if(truncated) {
-      ddist2 <- switch(dist, 
-        "student"  = dtt, "gaussian" = dtnorm, "logistic" = dtlogis)
-      sdist2 <- switch(dist, 
-        "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
-      hdist2 <- switch(dist, 
-        "student"  = htt, "gaussian" = htnorm, "logistic" = htlogis)
+    if(type == "ml") {
+      ## distribution functions for maximum likelihood
+      if(truncated) {
+        ddist2 <- switch(dist, 
+          "student"  = dtt, "gaussian" = dtnorm, "logistic" = dtlogis)
+        sdist2 <- switch(dist, 
+          "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
+        hdist2 <- switch(dist, 
+          "student"  = htt, "gaussian" = htnorm, "logistic" = htlogis)
+      } else {
+        ddist2 <- switch(dist, 
+          "student"  = dct, "gaussian" = dcnorm, "logistic" = dclogis)
+        sdist2 <- switch(dist, 
+          "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
+        hdist2 <- switch(dist, 
+          "student"  = hct, "gaussian" = hcnorm, "logistic" = hclogis)
+      }
+      ddist <- if(dist == "student") ddist2 else function(..., df) ddist2(...)
+      sdist <- if(dist == "student") sdist2 else function(..., df) sdist2(...)
+      hdist <- if(dist == "student") hdist2 else function(..., df) hdist2(...)
     } else {
-      ddist2 <- switch(dist, 
-        "student"  = dct, "gaussian" = dcnorm, "logistic" = dclogis)
-      sdist2 <- switch(dist, 
-        "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
-      hdist2 <- switch(dist, 
-        "student"  = hct, "gaussian" = hcnorm, "logistic" = hclogis)
+      stopifnot(requireNamespace("scoringRules"))
+      ## loss function for CRPS minimization  
+      if(truncated) {   
+        ddist2 <-  switch(dist, 
+          "student"  = crps_tt, 
+          "gaussian" = crps_tnorm, 
+          "logistic" = crps_tlogis)    
+        sdist2 <-  switch(dist, 
+          "student"  = gradcrps_tt, 
+          "gaussian" = gradcrps_tnorm, 
+          "logistic" = gradcrps_tlogis) 
+        hdist2 <-  switch(dist, 
+          "student"  = hesscrps_tt, 
+          "gaussian" = hesscrps_tnorm, 
+          "logistic" = hesscrps_tlogis) 
+      } else {
+        ddist2 <- switch(dist, 
+          "student"  = crps_ct, 
+          "gaussian" = crps_cnorm, 
+          "logistic" = crps_clogis)
+        sdist2 <- switch(dist, 
+          "student"  = gradcrps_ct, 
+          "gaussian" = gradcrps_cnorm, 
+          "logistic" = gradcrps_clogis)
+        hdist2 <- switch(dist, 
+          "student"  = hesscrps_ct, 
+          "gaussian" = hesscrps_cnorm, 
+          "logistic" = hesscrps_clogis)
+      }
+      ddist3 <- if(dist == "student") ddist2 else function(..., df) ddist2(...)
+      sdist3 <- if(dist == "student") sdist2 else function(..., df) sdist2(...)
+      hdist3 <- if(dist == "student") hdist2 else function(..., df) hdist2(...)
+      ddist <- function(x, location, scale, df, left = -Inf, right = Inf, log = TRUE) {    
+        - ddist3(x, location = location, scale = scale, lower = left, 
+          upper = right, df = df)
+      }
+      sdist <- function(x, location, scale, df, left = -Inf, right = Inf) {
+        rval <- - sdist3(x, df = df, location = location, scale = scale, 
+          lower = left, upper = right)
+        colnames(rval) <- c("dmu", "dsigma")
+        rval
+      }
+      hdist <- function(x, location, scale, df, left = -Inf, right = Inf, which) {
+        rval <- - hdist3(x, df = df, location = location, scale = scale, 
+          lower = left, upper = right)
+        colnames(rval) <- c("d2mu", "d2sigma", "dmu.dsigma", "dsigma.dmu")
+        rval
+      }
+
+      ## density function required for log-likelihood
+      if(truncated) {
+        ddist4 <- switch(dist, 
+          "student"  = dtt, "gaussian" = dtnorm, "logistic" = dtlogis)
+      } else {
+        ddist4 <- switch(dist, 
+          "student"  = dct, "gaussian" = dcnorm, "logistic" = dclogis)
+      }
+      lldist <- if(dist == "student") ddist4 else function(..., df) ddist4(...)
     }
-    ddist <- if(dist == "student") ddist2 else function(..., df) ddist2(...)
-    sdist <- if(dist == "student") sdist2 else function(..., df) sdist2(...)
-    hdist <- if(dist == "student") hdist2 else function(..., df) hdist2(...)
-
-
   } else { 
     ## for user defined distribution (requires list with ddist, sdist (optional)
     ## and hdist (optional), ddist, sdist, and hdist must be functions with
-    ## arguments x, mean, sd, df, left, right, and log)
+    ## arguments x, location, sd, df, left, right, and log)
     ddist <- dist$ddist
     sdist <- if(is.null(dist$sdist)) NULL else  dist$sdist
     if(is.null(dist$hdist)) {
-      if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
+      if(!is.null(hessian))
+        if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
       hessian <- TRUE     
     } else hdist <- dist$hdist 
   }
@@ -329,7 +392,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
       hess <- with(fit, hdist(y, mu, sigma, left = left, right = right,
         df = df, which = c("mu", "sigma", "mu.sigma", "sigma.mu")))
       grad <- with(fit, sdist(y, mu, sigma, left = left, right = right, 
-        df = df, which = "sigma"))
+        df = df))[,"dsigma"]
       hess[, "d2sigma"] <- hess[, "d2sigma"]*mu.eta(fit$zgamma)^2 + grad*dmu.deta(fit$zgamma)
       hess[, "dmu.dsigma"] <- hess[, "dsigma.dmu"] <- hess[, "dmu.dsigma"]*mu.eta(fit$zgamma)
       hess <- weights*hess
@@ -359,8 +422,14 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     if (hessian) solve(as.matrix(opt$hessian)) 
     else solve(hessfun(par))
   } else matrix(NA, k+q+dfest, n+k+dfest)
-  ll <- -opt$value
   df <- if(dfest) exp(delta) else df
+  if(type == "crps") {
+    ll <- sum(lldist(y, mu, sigma, left, right, log = TRUE, df = df))
+    crps <- opt$value/n
+  } else {
+    ll <- -opt$value
+    crps <- NULL
+  } 
 
   names(beta) <- colnames(x)
   names(gamma) <- colnames(z)
@@ -380,6 +449,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     cens = list(left = left, right = right),
     optim = opt,  
     method = method,
+    type = type,
     control = ocontrol,
     start = start,  
     weights = if(identical(as.vector(weights), rep.int(1, n))) NULL else weights,
@@ -389,6 +459,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     n = n,
     nobs = nobs,
     loglik = ll,
+    crps = crps,
     vcov = vcov,
     link = list(scale = linkobj),
     truncated = truncated,
@@ -488,6 +559,9 @@ print.summary.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
     if(length(x$df)) {
       cat(paste("Df: ", format(x$df, digits = digits), "\n", sep = ""))
     }
+    if(length(x$crps)) {
+      cat("CRPS:", formatC(x$crps, digits = digits), "\n")
+    }
     cat("Log-likelihood:", formatC(x$loglik, digits = digits),
       "on", sum(sapply(x$coefficients, NROW)), "Df\n")
     cat(paste("Number of iterations in", x$method, "optimization:", x$iterations[1L], "\n"))
@@ -514,115 +588,170 @@ model.matrix.crch <- function(object, model = c("location", "scale"), ...) {
 
 fitted.crch <- function(object, type = c("location", "scale"), ...) object$fitted.values[[match.arg(type)]]
 
-predict.crch <- function(object, newdata = NULL,
-  type = c("response", "location", "scale", "quantile"), na.action = na.pass, at = 0.5, left = NULL, right = NULL, ...)
+predict.crch <- function(object, newdata = NULL, type = c("location", "scale", 
+  "response", "parameter", "density", "probability", "quantile", "crps"),
+  na.action = na.pass, at = 0.5, left = NULL, right = NULL, ...)
 {
+  ## types of prediction
   type <- match.arg(type)
-  ## response/location are synonymous
-  if(type == "location") type <- "response"
-  
-  ## type quantile not available for user defined distributions
-  if(type == "quantile" & !is.character(object$dist))
-    stop("type quantile not available for user defined distributions")
+  attype <- if(is.character(at)) 
+    match.arg(at, c("function", "list", "response")) else "numeric"
 
-  if(type == "quantile" & !is.null(newdata)){
+
+  ## extract some values from fitted object
+  dist <- object$dist  
+
+
+  ## get mu and sigma
+  if(missing(newdata) || is.null(newdata)) {
+    mu <- object$fitted.values$location
+    sigma <- object$fitted.values$scale
+    if(attype == "response") {
+      at <- if(is.null(object$y)) 
+        model.response(model.frame(object)) else object$y
+      attype <- "numeric"
+    } 
+  } else {
+    tnam <- switch(type, "location" = "location", "scale" = "scale",  "full")
+    if(attype == "response") {
+      mf <- model.frame(object$terms[[tnam]], newdata,
+        na.action = na.action, xlev = object$levels[[tnam]])
+      at <- model.response(mf)
+      attype <- "numeric"
+    } else {
+      mf <- model.frame(delete.response(object$terms[[tnam]]), newdata,
+        na.action = na.action, xlev = object$levels[[tnam]])
+    }
+    newdata <- newdata[rownames(mf), , drop = FALSE]
+    offset <- list(location = rep.int(0, nrow(mf)), 
+      scale = rep.int(0, nrow(mf)))
+
+    if(type != "scale") {
+      X <- model.matrix(delete.response(object$terms$location), mf, 
+        contrasts = object$contrasts$location)
+      if(!is.null(object$call$offset)) offset[[1L]] <- offset[[1L]] + 
+        eval(object$call$offset, newdata)
+      if(!is.null(off.num <- attr(object$terms$location, "offset"))) {
+        for(j in off.num) offset[[1L]] <- offset[[1L]] + 
+          eval(attr(object$terms$location, "variables")[[j + 1L]], newdata)
+      }
+      mu <- drop(X %*% object$coefficients$location + offset[[1L]])
+    }
+    if(type != "location") {
+      Z <- model.matrix(object$terms$scale, mf, 
+        contrasts = object$contrasts$scale)
+      if(!is.null(off.num <- attr(object$terms$scale, "offset"))) {
+        for(j in off.num) offset[[2L]] <- offset[[2L]] + 
+          eval(attr(object$terms$scale, "variables")[[j + 1L]], newdata)
+      }
+      sigma <- object$link$scale$linkinv(drop(Z %*% object$coefficients$scale +
+        offset[[2L]]))
+    }
+
+  }
+
+
+  ## functions for various prediction types that use full distributions
+  if(!type %in% c("location", "scale")) {
+    ## these prediction types are not yet implemented for user defined 
+    ## distributions
+    if(!is.character(dist))
+      stop("type response density, probability, quantile, or crps not available for user defined distributions")
+
+    ## for non-constant censoring or truncation points, left and right have to
+    ## be specified
+    if(!is.null(newdata)){
       if(length(object$cens$left) > 1) {
-        if(is.null(left)) stop("left has to be specified for non-constant left censoring")
-        if(length(left) > 1 & length(left) != NROW(newdata)) stop("left must have length 1 or length of newdata")
+        if(is.null(left)) 
+          stop("left has to be specified for non-constant left censoring")
+        if(length(left) > 1 & length(left) != NROW(newdata)) 
+          stop("left must have length 1 or length of newdata")
       }
       if(length(object$cens$right) > 1) {
-        if(is.null(right)) stop("right has to be specified for non-constant right censoring")
-        if(length(right) > 1 & length(right) != NROW(newdata)) stop("right  must have length 1 or length of newdata")
+        if(is.null(right)) 
+          stop("right has to be specified for non-constant right censoring")
+        if(length(right) > 1 & length(right) != NROW(newdata)) 
+          stop("right  must have length 1 or length of newdata")
       }
     }
-  
-  if(type == "quantile") {
-    if(object$truncated) {
-      qdist2 <- switch(object$dist, 
-        "student"  = qtt, 
-        "gaussian" = function(..., df) qtnorm(...), 
-        "logistic" = function(..., df) qtlogis(...))
-    } else {
-      qdist2 <- switch(object$dist, 
-        "student"  = qct, 
-        "gaussian" = function(..., df) qcnorm(...), 
-        "logistic" = function(..., df) qclogis(...))
-    }
-    
+
     if(is.null(left)) left <- object$cens$left
     if(is.null(right)) right <- object$cens$right
 
-    qdist <- function(at, location, scale, df) {
-      rval <- sapply(at, function(p) qdist2(p, location, scale, 
-        df = df, left = left, right = right))
-      if(length(at) > 1L) {
-        if(NCOL(rval) == 1L) rval <- matrix(rval, ncol = length(at),
-	        dimnames = list(unique(names(rval)), NULL))
-        colnames(rval) <- paste("q_", at, sep = "")
-      } else {
-        rval <- drop(rval)
+    ## distribution function
+    if(object$truncated) {
+      distfun2 <- switch(type, 
+        "density" = switch(dist, 
+            "student"  = dtt, "gaussian" = dtnorm, "logistic" = dtlogis),
+        "probability" = switch(dist, 
+            "student"  = ptt, "gaussian" = ptnorm, "logistic" = ptlogis),
+        "quantile" = switch(dist, 
+            "student"  = qtt, "gaussian" = qtnorm, "logistic" = qtlogis),
+        "crps" = switch(dist, 
+            "student"  = crps_tt, "gaussian" = crps_tnorm, "logistic" = crps_tlogis),
+        "response" = switch(dist, 
+            "student"  = ett, "gaussian" = etnorm, "logistic" = etlogis))
+    } else {
+      distfun2 <- switch(type, 
+        "density" = switch(dist, 
+            "student"  = dct, "gaussian" = dcnorm, "logistic" = dclogis),
+        "probability" = switch(dist, 
+            "student"  = pct, "gaussian" = pcnorm, "logistic" = pclogis),
+        "quantile" = switch(dist, 
+            "student"  = qct, "gaussian" = qcnorm, "logistic" = qclogis),
+        "crps" = switch(dist, 
+            "student"  = crps_ct, "gaussian" = crps_cnorm, "logistic" = crps_clogis),
+        "response" = switch(dist, 
+            "student"  = ect, "gaussian" = ecnorm, "logistic" = eclogis))
+    }
+    distfun <- if(dist == "student") distfun2 else function(..., df) distfun2(...)
+
+
+
+    
+
+    ## distribution function for different formats of at
+    fun <- function(at, location = mu, scale = sigma, df = object$df, ...) {
+      n <- length(location)
+      if(length(left) == 1L) left <- rep.int(left, n)
+      if(length(right) == 1L) right <- rep.int(right, n)
+      if(attype == "list") {
+        fun <- lapply(1L:length(location), function(i) {
+            distfun(at, location[i], scale[i], df = df, left[i], right[i])}, ...)
+      } else {  
+        n <- length(location)
+        if(length(at) == 1L) at <- rep.int(as.vector(at), n)
+        if(length(at) != n) at <- rbind(at)
+        if(is.matrix(at) && NROW(at) == 1L) {
+          at <- matrix(rep(at, each = n), nrow = n)
+          rv <- distfun(as.vector(at), rep.int(location, ncol(at)), 
+                        rep.int(scale, ncol(at)), df = df,
+                        rep.int(left, ncol(at)), rep.int(right, ncol(at)), ...)
+          rv <- matrix(rv, nrow = n)
+          rownames(rv) <- names(location)
+          colnames(rv) <- paste(substr(type, 1L, 1L),
+                                round(at[1L, ], digits = pmax(3L, getOption("digits") - 3L)), sep = "_")
+        } else {
+          rv <- distfun(at, location, scale, df = df, left, right, ...)
+          names(rv) <- names(location)
+        }
       }
-      rval 
+      return(rv)
     }
   }
-  
-  if(missing(newdata)) {
 
-    rval <- switch(type,
-      "response" = {
-        object$fitted.values$location
-      },
-      "scale" = {
-        object$fitted.values$scale
-      },
-      "quantile" = {
-        qdist(at, object$fitted.values$location, object$fitted.values$scale, object$df)
-      },
-    )
-    return(rval)
 
-  } else {
-    tnam <- switch(type,
-      "response" = "location",
-      "scale" = "scale",
-      "quantile" = "full"
-    )
 
-    mf <- model.frame(delete.response(object$terms[[tnam]]), newdata, na.action = na.action, xlev = object$levels[[tnam]])
-    newdata <- newdata[rownames(mf), , drop = FALSE]
-    offset <- list(location = rep.int(0, nrow(mf)), scale = rep.int(0, nrow(mf)))
-
-    if(type %in% c("response", "quantile")) {
-      X <- model.matrix(delete.response(object$terms$location), mf, contrasts = object$contrasts$location)
-      if(!is.null(object$call$offset)) offset[[1L]] <- offset[[1L]] + eval(object$call$offset, newdata)
-      if(!is.null(off.num <- attr(object$terms$location, "offset"))) {
-        for(j in off.num) offset[[1L]] <- offset[[1L]] + eval(attr(object$terms$location, "variables")[[j + 1L]], newdata)
-      }
-    }
-    if(type %in% c("scale", "quantile")) {
-      Z <- model.matrix(object$terms$scale, mf, contrasts = object$contrasts$scale)
-      if(!is.null(off.num <- attr(object$terms$scale, "offset"))) {
-        for(j in off.num) offset[[2L]] <- offset[[2L]] + eval(attr(object$terms$scale, "variables")[[j + 1L]], newdata)
-      }
-    }
-   
-    rval <- switch(type,
-      "response" = {
-        drop(X %*% object$coefficients$location + offset[[1L]])
-      },
-      "scale" = {
-        object$link$scale$linkinv(drop(Z %*% object$coefficients$scale + offset[[2L]]))
-      },
-      "quantile" = {
-        mu <- drop(X %*% object$coefficients$location + offset[[1L]])
-        sigma <- object$link$scale$linkinv(drop(Z %*% object$coefficients$scale + offset[[2L]]))
-        df <- object$df
-        qdist(at, mu, sigma, df)       
-      }
-    )
-    return(rval)
-
-  }
+  rval <- switch(type,
+    "location" = mu,
+    "scale" = sigma,
+    "response" = distfun(mu, sigma, df = object$df, left, right),
+    "parameter" = data.frame(location = mu, scale = sigma),
+    "density" = if(attype == "function") fun else fun(at, ...),
+    "probability" = if(attype == "function") fun else fun(at, ...),
+    "quantile" = if(attype == "function") fun else fun(at, ...),
+    "crps" = if(attype == "function") fun else fun(at, ...))
+  return(rval)
 }
 
 
@@ -680,6 +809,31 @@ vcov.crch <- function(object, model = c("full", "location", "scale", "df"), ...)
 
 logLik.crch <- function(object, ...) structure(object$loglik, df = sum(sapply(object$coefficients, length)), class = "logLik")
 
+crps.crch <- function(object, newdata = NULL, average = TRUE, ...) {
+  if(length(object$crps)) {
+    object$crps
+  } else {
+#    stopifnot(requireNamespace("scoringRules"))
+#    family <- switch(object$dist, 
+#          "student"  =  "t", "gaussian" = "normal", "logistic" = "logistic")
+#    mass <- if(object$truncated) "trunc" else "cens"
+#    y <- object$residuals + object$fitted.values$location
+#    location <- object$fitted.values$location
+#    scale <- object$fitted.values$scale 
+#    df <- object$df
+#    left <- object$cens$left
+#    right <- object$cens$right
+#    rval <- scoringRules::crps(y, family = family, location = location, df = df,
+#      scale = scale, lower = left, upper = right, lmass = mass, umass = mass)
+    rval <- predict(object, newdata = newdata, type = "crps", at = "response")
+    if(average) rval <- mean(rval)
+    rval
+  }
+}
+  
+
+
+
 residuals.crch <- function(object, type = c("standardized", "pearson", "response", "quantile"), ...) {
   if(match.arg(type) == "response") {
     object$residuals 
@@ -688,12 +842,12 @@ residuals.crch <- function(object, type = c("standardized", "pearson", "response
       user defined distributions")
     if(object$truncated) {
       pdist <- switch(object$dist, 
-        "student"  = function(q, mean, sd) ptt(q, mean, sd, df = object$df), 
+        "student"  = function(q, location, scale) ptt(q, location, scale, df = object$df), 
         "gaussian" = ptnorm, 
         "logistic" = ptlogis)
     } else {
       pdist <- switch(object$dist, 
-        "student"  = function(q, mean, sd) pct(q, mean, sd, df = object$df), 
+        "student"  = function(q, location, scale) pct(q, location, scale, df = object$df), 
         "gaussian" = pcnorm, 
         "logistic" = pclogis)
     }
@@ -706,32 +860,6 @@ residuals.crch <- function(object, type = c("standardized", "pearson", "response
   } else object$residuals/object$fitted.values$scale
 }
 
-
-
-getSummary.crch <- function (obj, alpha = 0.05, ...) 
-{
-  cf <- summary(obj)$coefficients
-  cval <- qnorm(1 - alpha/2)
-  for (i in seq_along(cf)) cf[[i]] <- cbind(cf[[i]], 
-      cf[[i]][, 1] - cval * cf[[i]][, 2],
-      cf[[i]][, 1] + cval * cf[[i]][, 2])
-  nam <- unique(unlist(lapply(cf, rownames)))
-  acf <- array(dim = c(length(nam), 6, length(cf)), 
-    dimnames = list(nam, c("est", "se", "stat", "p", "lwr", "upr"), names(cf)))
-  for (i in seq_along(cf)) acf[rownames(cf[[i]]), , i] <- cf[[i]]
-
-  return(list(
-    coef = acf, 
-    sumstat = c(
-      N = obj$n, 
-      logLik = as.vector(logLik(obj)), 
-      AIC = AIC(obj), 
-      BIC = BIC(obj)
-    ), 
-    contrasts = obj$contrasts, 
-    xlevels = obj$xlevels, 
-    call = obj$call))
-}
 
 
 update.crch <- function (object, formula., ..., evaluate = TRUE)
@@ -785,11 +913,25 @@ estfun.crch <- function(x, ...) {
   if(is.character(x$dist)){
     ## distribution functions
     if(x$truncated) {
-      sdist2 <- switch(x$dist, 
-        "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
+      sdist2 <-  if(x$type == "crps") {
+          switch(x$dist, 
+            "student"  = gradcrps_tt, 
+            "gaussian" = gradcrps_tnorm, 
+            "logistic" = gradcrps_tlogis) 
+        } else {
+          switch(x$dist, 
+            "student"  = stt, "gaussian" = stnorm, "logistic" = stlogis)
+        }
     } else {
-      sdist2 <- switch(x$dist, 
-        "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
+      sdist2 <- sdist2 <-  if(x$type == "crps") { 
+          switch(x$dist, 
+            "student"  = gradcrps_tt, 
+            "gaussian" = gradcrps_tnorm, 
+            "logistic" = gradcrps_tlogis) 
+        } else {
+          switch(x$dist, 
+            "student"  = sct, "gaussian" = scnorm, "logistic" = sclogis)
+        }
     }
     sdist <- if(x$dist == "student") sdist2 else function(..., df) sdist2(...)
   } else { 
@@ -805,6 +947,163 @@ estfun.crch <- function(x, ...) {
   
   return(rval)
 }
+
+
+#pit.crch <- function(object, newdata = NULL, left = NULL, right = NULL, ...)
+#{
+#  ## observed response
+#  mt <- terms(object)
+#  mf <- if(is.null(newdata)) model.frame(object) else model.frame(mt, newdata, na.action = na.omit)
+#  y <- model.response(mf)
+
+#  ## for non-constant censoring or truncation points, left and right have to
+#  ## be specified
+#  if(!is.null(newdata)){
+#    if(length(object$cens$left) > 1) {
+#      if(is.null(left)) 
+#        stop("left has to be specified for non-constant left censoring")
+#      if(length(left) > 1 & length(left) != NROW(newdata)) 
+#        stop("left must have length 1 or length of newdata")
+#    }
+#    if(length(object$cens$right) > 1) {
+#      if(is.null(right)) 
+#        stop("right has to be specified for non-constant right censoring")
+#      if(length(right) > 1 & length(right) != NROW(newdata)) 
+#        stop("right  must have length 1 or length of newdata")
+#    }
+#  }
+#  if(is.null(left)) left <- object$cens$left
+#  if(is.null(right)) right <- object$cens$right
+#  y[y<left] <- left
+#  y[y>right] <- right
+
+#  ## cdf
+#  pfun <- predict(object, newdata = newdata, type = "probability", 
+#    at = "function", left = left, right = right, ...)
+#  p <- pfun(y)
+
+#  ## in case of censoring provide interval
+#  if(y01 <- any(y <= left | y >= right)) {
+#    p <- cbind(p, p)
+#    p[y01, 1L] <- pfun(y - .Machine$double.eps^0.9)[y01]
+#  }
+#  return(p)
+#}
+
+#utils::globalVariables("rootogram.default")
+
+#rootogram.crch <- function(object, newdata = NULL, breaks = NULL,
+#  max = NULL, xlab = NULL, main = NULL, width = NULL, left = NULL,  
+#  right = NULL, ...)
+#{
+#    ## observed response and weights
+#    mt <- terms(object)
+#    mf <- if(is.null(newdata)) model.frame(object) else model.frame(mt, newdata, na.action = na.omit)
+#    y <- model.response(mf)
+#    w <- model.weights(mf)
+#    if(is.null(w)) w <- rep.int(1, NROW(y))
+
+
+#    ## for non-constant censoring or truncation points, left and right have to
+#    ## be specified
+#    if(!is.null(newdata)){
+#      if(length(object$cens$left) > 1) {
+#        if(is.null(left)) 
+#          stop("left has to be specified for non-constant left censoring")
+#        if(length(left) > 1 & length(left) != NROW(newdata)) 
+#          stop("left must have length 1 or length of newdata")
+#      }
+#      if(length(object$cens$right) > 1) {
+#        if(is.null(right)) 
+#          stop("right has to be specified for non-constant right censoring")
+#        if(length(right) > 1 & length(right) != NROW(newdata)) 
+#          stop("right  must have length 1 or length of newdata")
+#      }
+#    }
+#    if(is.null(left)) left <- object$cens$left
+#    if(is.null(right)) right <- object$cens$right
+#    y[y<left] <- left
+#    y[y>right] <- right
+
+#    ## breaks
+#    if(is.null(breaks)) breaks <- "Sturges"
+#    breaks <- hist(y[w > 0], plot = FALSE, breaks = breaks)$breaks
+#    if(min(breaks) == left) breaks <- c(left - .Machine$double.eps^0.9, breaks)
+#    if(max(breaks) == right) breaks <- c(right - .Machine$double.eps^0.9, breaks)
+
+#    obsrvd <- as.vector(xtabs(w ~ cut(y, breaks, include.lowest = TRUE)))
+#    ## expected frequencies
+#    p <- predict(object, newdata, type = "probability", at = breaks, 
+#      left = left, right = right)
+#    p <- p[, -1L, drop = FALSE] - p[, -ncol(p), drop = FALSE]
+#    expctd <- colSums(p * w)
+
+#    ## call default method
+#    if(is.null(xlab)) xlab <- as.character(attr(mt, "variables"))[2L]
+#    if(is.null(main)) main <- deparse(substitute(object))
+#    rootogram.default(obsrvd, expctd, breaks = breaks,
+#                      xlab = xlab, main = main, width = 1, ...)
+#}
+
+
+#simulate.crch <- function(object, nsim = 1, seed = NULL, newdata = NULL, 
+#  left = NULL, right = NULL, ...) {
+#    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+#        runif(1)
+#    if (is.null(seed))
+#        RNGstate <- get(".Random.seed", envir = .GlobalEnv)
+#    else {
+#        R.seed <- get(".Random.seed", envir = .GlobalEnv)
+#        set.seed(seed)
+#        RNGstate <- structure(seed, kind = as.list(RNGkind()))
+#        on.exit(assign(".Random.seed", R.seed, envir = .GlobalEnv))
+#    }
+#    
+
+#    ## distribution function
+#    if(object$truncated) {
+#      rdist2 <- switch(object$dist, 
+#            "student"  = rtt, "gaussian" = rtnorm, "logistic" = rtlogis)
+#    } else {
+#      rdist2 <- switch(object$dist, 
+#            "student"  = rct, "gaussian" = rcnorm, "logistic" = rclogis)
+#    }
+#    rdist <- if(object$dist == "student") rdist2 else function(..., df) rdist2(...)
+
+#    ## for non-constant censoring or truncation points, left and right have to
+#    ## be specified
+#    if(!is.null(newdata)){
+#      if(length(object$cens$left) > 1) {
+#        if(is.null(left)) 
+#          stop("left has to be specified for non-constant left censoring")
+#        if(length(left) > 1 & length(left) != NROW(newdata)) 
+#          stop("left must have length 1 or length of newdata")
+#      }
+#      if(length(object$cens$right) > 1) {
+#        if(is.null(right)) 
+#          stop("right has to be specified for non-constant right censoring")
+#        if(length(right) > 1 & length(right) != NROW(newdata)) 
+#          stop("right  must have length 1 or length of newdata")
+#      }
+#    }
+#    if(is.null(left)) left <- object$cens$left
+#    if(is.null(right)) right <- object$cens$right
+
+
+#    par <- predict(object, newdata, type = "parameter", 
+#      left = left, right = right)
+#    n <- nrow(par)
+#    nm <- rownames(par)
+#    val <- matrix(rdist(n * nsim, par$location, par$scale, df = object$df,
+#      left = left, right = right),  n, nsim)
+#    val <- as.data.frame(val)
+#    names(val) <- paste("sim", seq_len(nsim), sep = "_")
+#    if (!is.null(nm)) {
+#        row.names(val) <- nm
+#    }
+#    attr(val, "seed") <- RNGstate
+#    val
+#}
 
 
 

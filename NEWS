@@ -1,10 +1,33 @@
+Changes in Version 1.0-1
+  
+  o Added argument 'type' to crch() which can be set to "crps" for parameter
+    estimation with minimum CRPS instead of maximum likelihood. 
+
+  o Added S3 method of crps() from scoringRules for "crch" objects.
+
+  o Improvements for the predict() method:
+    - new types "parameter", "density", "probability", and "crps"
+    - with type="response" now the expected value and not the location 
+      parameter is returned (not equal for censored and truncated 
+      distributions). For better backward compatibility, the default type is
+      set to "location".
+
+  o Changed argument names mean and sd to location and scale in logistic and
+    student-t distribution functions 
+
+  o Added new function "crch.stabsel" for stability selection based on    
+    "crch.boost.fit". Small S3 methods for the returned class "stabsel.crch"
+    are also provided.
+  
+
 Changes in Version 1.0-0
   
   o New release accompanying the R-Journal paper: "Heteroscedastic Censored 
     and Truncated Regression with crch" by Messner, Mayr, and Zeileis
     which appears as R-Journal 8(1). See also citation("crch"). 
     
-  o added estfun() method for crch objects
+  o Added estfun() method for crch objects
+
 
 Changes in Version 0.9-2
   

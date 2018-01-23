@@ -1,14 +1,15 @@
 ## function to set some control parameters for boosting (replaces crch.control() for boosting)
 crch.boost <- function(maxit = 100, nu = 0.1, start = NULL, 
   dot = "separate", mstop = c("max", "aic", "bic", "cv"),  nfolds = 10, 
-  foldid = NULL)
+  foldid = NULL, maxvar = NULL )
 {
   if(is.numeric(mstop)) {
     maxit <- mstop
     mstop <- "max"
   }
   rval <- list(maxit = maxit, nu = nu, nfolds = nfolds, foldid = foldid, 
-    start = start, dot = dot, mstop = match.arg(mstop), fit = "crch.boost.fit")
+    start = start, dot = dot, mstop = match.arg(mstop), maxvar = maxvar,
+    fit = "crch.boost.fit")
   rval
 }
 
@@ -66,9 +67,11 @@ standardize.coefficients <- function(coef, restandardize = FALSE, center, scale)
 
 ## actual fitting function
 crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE, 
-  dist = "gaussian", df = NULL, link.scale = "log",
+  dist = "gaussian", df = NULL, link.scale = "log", type = "ml",
   weights = NULL, offset = NULL, control = crch.boost()) 
 {
+  ## type = "crps" currently not supported
+  if(type == "crps") stop("type = 'crps' currently not supported for boosting")
   ## response and regressor matrix
   n <- NROW(x)  
   k <- NCOL(x)
@@ -89,13 +92,19 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
 
   ## control parameters
   maxit <- control$maxit
-  nu <- control$nu
+  nu    <- control$nu
   start <- control$start
   mstop <- control$mstop
 
   ## extend left and right to vectors of length n
-  if(length(left) == 1) left <- rep(left, n)
-  if(length(right) == 1) right <- rep(right, n)
+  left2 <- left
+  right2 <- right
+  if(length(left) == 1) {
+    left <- rep(left, n)
+  }
+  if(length(right) == 1) {
+    right <- rep(right, n)
+  }
 
   ## link
   if(is.character(link.scale)) {
@@ -124,7 +133,7 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
   x <- standardize.matrix(x, weights = weights)
   z <- standardize.matrix(z, weights = weights)
   basefit <- crch.fit(x[,1, drop = FALSE], z[,1, drop = FALSE], y, left, right, 
-      truncated, dist, df, link.scale, weights, offset)
+      truncated, dist, df, link.scale, type, weights, offset)
   y <- standardize.matrix(y, center = basefit$coefficients$location, scale = linkinv(basefit$coefficients$scale))
     
   standardize <- list(
@@ -133,7 +142,7 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
     y = list(center = attr(y, "standardize:center"), scale = attr(y, "standardize:scale")))
 
   ## standardize left, right, and offset
-  left <- (left - standardize$y$center)/standardize$y$scale
+  left  <- (left - standardize$y$center) /standardize$y$scale
   right <- (right - standardize$y$center)/standardize$y$scale
   offset[[1L]]  <- offset[[1L]]/standardize$y$scale
 
@@ -234,7 +243,11 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
   }
 
 
-  ## actual boosting
+  ## Indicator for stability selection
+  ## Only perform stability selection if maxvar is given, numeric, and larger than 0
+  stabsel <- all( ! c( ! is.numeric(control$maxvar),
+                       control$maxvar < 1, ! "maxvar" %in% names(control) ) )
+
   for(i in startit:maxit) {
     ## gradient of negative likelihood
     grad <- gradfun(par)
@@ -248,8 +261,8 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
     par3 <- par
     minind <- which.max(abs(basefits))
     par3[k + minind] <- par3[k + minind] + nu*basefits[minind]
-
-
+  
+  
     ## to compare mu and sigma improvements loglik must be used instead of rss
     ll3 <- -loglikfun(par3)
     ll2 <- -loglikfun(par2)
@@ -257,10 +270,22 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
     coefpath <- rbind(coefpath, par)
     llnew <- max(ll3, ll2)
     loglikpath <- rbind(loglikpath, llnew)
+  
+    ## If stability selection (maxvar selected) stop as soon
+    ## as maxvar parameters have been choosen.
+    if ( stabsel ) {
+       ## Count number of selected parameters, ignore intercepts
+       parsel <- c(colnames(x),colnames(z))[which(par!=0)]
+       parsel <- length(grep("[^(Intercept)]",parsel))
+       cat(sprintf("Iteration %d/%d parameters added %d/%d\r",i,maxit,parsel,length(par)))
+       if ( parsel >= control$maxvar ) break
+    }
+  
   }
+  if ( stabsel ) cat("\n") # end output
 
   ## cross validation to find optimum mstop
-  if(mstop == "cv") {
+  if( mstop == "cv" ) {
     foldid <- control$foldid
     nfolds <- control$nfolds
     control$standardize <- FALSE
@@ -294,8 +319,6 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
       
   colnames(coefpath) <- c(colnames(x), paste("scale_", colnames(z), sep = ""))
   ## restandardize
-  left  <-  left*standardize$y$scale + standardize$y$center
-  right <- right*standardize$y$scale + standardize$y$center
   offset[[1L]] <- offset[[1L]]*standardize$y$scale
   beta <- coefpath[,seq.int(length.out = k), drop = FALSE]
   gamma <- coefpath[,seq.int(length.out = q) + k, drop = FALSE]
@@ -324,7 +347,8 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
   gamma <- fit$gamma
   mu <- fit$mu
   sigma <- fit$sigma
-  ll <- - loglikfun(par)
+  ll <- sum(weights*ddist(round(y, digits = 6), mu, sigma, df = df, left = left2, right = right2, log = TRUE))
+  
 
   names(beta) <- colnames(x)
   names(gamma) <- colnames(z)
@@ -336,7 +360,7 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
     residuals = y - mu,
     fitted.values = list(location = mu, scale = sigma),
     dist = dist,
-    cens = list(left = left, right = right), 
+    cens = list(left = left2, right = right2), 
     control = control,
     weights = if(identical(as.vector(weights), rep.int(1, n))) NULL else weights,
     offset = list(location = if(identical(offset[[1L]], rep.int(0, n))) NULL else 
@@ -602,17 +626,14 @@ plot.crch.boost <- function(x, loglik = FALSE,
   }
 }
 
-predict.crch.boost <- function(object, newdata = NULL, mstop = NULL, 
-  type = c("response", "location", "scale", "quantile"), na.action = na.pass, at = 0.5, 
-  left = NULL, right = NULL, ...)
+predict.crch.boost <- function(object, newdata = NULL, mstop = NULL, ...)
 {
   object <- mstop.crch.boost(object, mstop = mstop)
   if(missing(newdata)) {
     if(!is.null(mstop)) stop("newdata has to be supplied for user defined mstop")
-    predict.crch(object, type = type, na.action = na.action, at = at, left = left, right = right, ...)
+    predict.crch(object, ...)
   } else {
-    predict.crch(object, newdata = newdata, type = type, na.action = na.action, 
-      at = at, left = left, right = right, ...)
+    predict.crch(object, newdata = newdata, ...)
   }
 }
 

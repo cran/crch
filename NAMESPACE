@@ -1,13 +1,18 @@
-useDynLib(crch)
-import("stats", "Formula")
+useDynLib(crch, .registration = TRUE)
+import("stats", "Formula", "scoringRules")
 importFrom("utils", "tail")
-importFrom("graphics", "abline", "axis", "par", "plot", "strwidth")
+importFrom("graphics", "abline", "axis", "par", "plot", "strwidth", "barplot", 
+  "hist", "legend", "title")
+importFrom("sandwich", "estfun")
+importFrom("grDevices", "gray.colors")
 
 export(
   "crch",
   "trch",
   "crch.control",
   "crch.fit",
+  "crch.stabsel",
+  "getSummary.crch",
   "hxlr",
   "hxlr.control",
   "dcnorm",
@@ -35,8 +40,7 @@ export(
   "qtt",
   "rtt",
   "crch.boost",
-  "crch.boost.fit",
-  "getSummary.crch"
+  "crch.boost.fit"
 )
 
 ## methods for crch
@@ -53,7 +57,8 @@ S3method("vcov", "crch")
 S3method("update", "crch")
 S3method("model.frame", "crch")
 S3method("model.matrix", "crch")
-
+S3method("estfun", "crch")
+S3method("crps", "crch")
 S3method("plot", "crch.boost")
 S3method("coef", "crch.boost")
 S3method("logLik", "crch.boost")
@@ -61,6 +66,8 @@ S3method("predict", "crch.boost")
 S3method("print", "crch.boost")
 S3method("summary", "crch.boost")
 S3method("print", "summary.crch.boost")
+S3method("print", "stabsel.crch")
+S3method("plot",  "stabsel.crch")
 
 ## methods for hxlr
 S3method("logLik", "hxlr")
