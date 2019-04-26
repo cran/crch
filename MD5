@@ -1,4 +1,4 @@
-a04753aa1ce0dce920f72797a5f2a82f *DESCRIPTION
+69884a8f801cbcf3e0bec37189d47a33 *DESCRIPTION
 91a842e71d561b5cb4265554a46f0e5e *NAMESPACE
 4c5c1ea5c42b63ad9be81ffcdf238aab *NEWS
 344e4ffcdd1f1d98503bce6282bd66e0 *R/clogis.R
@@ -12,13 +12,13 @@ fb9a306c06d35b33d15db784f981d3cc *R/mtable.R
 f124302413e1434db119121d3398ac04 *R/tlogis.R
 dd081a3d7d8421b5888d73fdff158a01 *R/tnorm.R
 844fd3a131d0c46fe893b70d74a7fdf4 *R/tt.R
-e586a281177fb745d8412f60949d9d96 *build/partial.rdb
-eb28bfe52747cea741b33f647439754e *build/vignette.rds
+e86eda7c67b5e3faf14ad03c0b78c65b *build/partial.rdb
+b4c1836c7498ddbdd11955fba341d07c *build/vignette.rds
 9e7b33663f8dea4985d0f2c364c10a62 *data/RainIbk.rda
 722bfa0fc755ef14c3df51f413dc6f68 *inst/CITATION
 8f0ec5633a3af4d6efa7eace3e51141c *inst/doc/crch.R
 16b96f235d60dda312c6882ef2bb696f *inst/doc/crch.Rnw
-5f9fb67b8c7deedc72e242133fd01a57 *inst/doc/crch.pdf
+d3b2189c29955edd473764d2e4180f0f *inst/doc/crch.pdf
 8a3c5a1675586b0de26a2e6d8b663a2d *man/RainIbk.Rd
 dcc73b7783def57bc416a58176ef0588 *man/clogis.Rd
 9b43cfdaaac9467138d108c7b5203ff5 *man/cnorm.Rd
@@ -48,7 +48,7 @@ cc6c4f615c09d912dd97969f56ec23b7 *src/mycov.c
 c59cd2d31a80388c6156f41c46f7bf2f *src/tlogis.c
 9297c4aa12cc453a902759a83167f3b3 *src/tnorm.c
 5c5aa14ca56fce2b93622c3b1e374d4e *src/tt.c
-6cab55565be73cbefd87d5ad580bd2fe *tests/Examples/crch-Ex.Rout.save
+a999f686633f08acfc60799fb827262b *tests/Examples/crch-Ex.Rout.save
 16b96f235d60dda312c6882ef2bb696f *vignettes/crch.Rnw
-ca3e8b7af2a1170cb55c417c8988e375 *vignettes/crch.Rout.save
+15915bdfd7b1f00c0d54859c975b27e2 *vignettes/crch.Rout.save
 fc2adb9fa5632da99ef50521ea38a876 *vignettes/crch.bib
