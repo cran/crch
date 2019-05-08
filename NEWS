@@ -1,3 +1,8 @@
+Changes in Version 1.0-3
+  
+  o updated contact information
+
+
 Changes in Version 1.0-1
   
   o Added argument 'type' to crch() which can be set to "crps" for parameter
@@ -11,6 +16,8 @@ Changes in Version 1.0-1
       parameter is returned (not equal for censored and truncated 
       distributions). For better backward compatibility, the default type is
       set to "location".
+
+  o Added pit(), rootogram(), and simulate() methods for crch objects.
 
   o Changed argument names mean and sd to location and scale in logistic and
     student-t distribution functions 
