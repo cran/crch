@@ -154,7 +154,7 @@ RainIbk$sqrtenssd <-
 CRCH <- crch(sqrt(rain) ~ sqrtensmean, data = RainIbk, dist = "gaussian")
 ## same as lm?
 all.equal(coef(lm(sqrt(rain) ~ sqrtensmean, data = RainIbk)),
-  head(coef(CRCH), -1))
+  head(coef(CRCH), -1), tolerance = .Machine$double.eps^0.25)
 
 ## print
 CRCH

@@ -1,6 +1,6 @@
 
-R version 3.4.0 (2017-04-21) -- "You Stupid Darkness"
-Copyright (C) 2017 The R Foundation for Statistical Computing
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -23,6 +23,7 @@ Type 'q()' to quit R.
 > library('crch')
 > 
 > base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
 > cleanEx()
 > nameEx("RainIbk")
 > ### * RainIbk
@@ -90,7 +91,7 @@ Type 'q()' to quit R.
 > CRCH <- crch(sqrt(rain) ~ sqrtensmean, data = RainIbk, dist = "gaussian")
 > ## same as lm?
 > all.equal(coef(lm(sqrt(rain) ~ sqrtensmean, data = RainIbk)),
-+   head(coef(CRCH), -1))
++   head(coef(CRCH), -1), tolerance = .Machine$double.eps^0.25)
 [1] TRUE
 > 
 > ## print
@@ -167,7 +168,7 @@ CRCH4  4 17867.35
 > ### Name: crch.boost
 > ### Title: Auxiliary functions to fit 'crch' models via boosting.
 > ### Aliases: crch.boost crch.boost.fit
-> ### Keywords: regression, boosting
+> ### Keywords: regression
 > 
 > ### ** Examples
 > 
@@ -287,7 +288,7 @@ Iteration 1/2000 parameters added 1/42Iteration 2/2000 parameters added 1/42It
 
   Selected formula:
    y ~ V2 + V3 | V4
-<environment: 0x4cf8c48>
+<environment: 0x55901dabd208>
 > 
 > CRCH2 <- crch(stabsel$formula.new, data = data, dist = "gaussian", left = 0 )
 > BOOST <- crch(stabsel$formula.new, data = data, dist = "gaussian", left = 0,
@@ -468,9 +469,13 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 > 
 > ### * <FOOTER>
 > ###
+> cleanEx()
+
+detaching ‘package:lmtest’, ‘package:zoo’
+
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  6.776 0.232 7.045 0 0 
+Time elapsed:  3.915 0.044 3.963 0 0 
 > grDevices::dev.off()
 null device 
           1 

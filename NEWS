@@ -1,3 +1,8 @@
+Changes in Version 1.0-4
+
+  o replaced depriciated C-function finite() with isfinite()
+
+
 Changes in Version 1.0-3
   
   o updated contact information
