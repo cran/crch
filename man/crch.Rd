@@ -153,8 +153,10 @@ RainIbk$sqrtenssd <-
 ## fit linear regression model with Gaussian distribution 
 CRCH <- crch(sqrt(rain) ~ sqrtensmean, data = RainIbk, dist = "gaussian")
 ## same as lm?
-all.equal(coef(lm(sqrt(rain) ~ sqrtensmean, data = RainIbk)),
-  head(coef(CRCH), -1), tolerance = .Machine$double.eps^0.25)
+all.equal(
+  coef(lm(sqrt(rain) ~ sqrtensmean, data = RainIbk)),
+  head(coef(CRCH), -1),
+  tol = 1e-6)
 
 ## print
 CRCH

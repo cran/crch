@@ -85,8 +85,9 @@ conveniently be called with \code{crch(\ldots, method = "boosting")}.
 }
 
 \references{
-  Messner JW, Mayr GJ, Zeileis A (2017). Non-Homogeneous Boosting for Predictor 
-    Selection in Ensemble Post-Processing. \emph{Monthly Weather Review}, \bold{145}(1), 137--147, \doi{10.1175/MWR-D-16-0088.1}.
+  Messner JW, Mayr GJ, Zeileis A (2016). Non-Homogeneous Boosting for Predictor 
+    Selection in Ensemble Post-Processing. \emph{Working Papers}, Faculty of 
+    Economics and Statistics, University of Innsbruck, url:http://econpapers.repec.org/paper/innwpaper/2016-04.htm.
 }
 
 \seealso{\code{\link{crch}}, \code{\link{crch.control}}}
