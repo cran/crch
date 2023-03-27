@@ -1,6 +1,6 @@
-bb64c1da4346feca71901c20e2d45553 *DESCRIPTION
+5fec3ab4faaafb347ca997f8a5397f90 *DESCRIPTION
 285333f5d9433194821d8cb735b9dab1 *NAMESPACE
-e93438c9dc1a90bc03d46f2ee1391b15 *NEWS.md
+29702298355e8d3d0561bdda98e6cf82 *NEWS.md
 647aa28d50a4c1bb5095b915cca8ee92 *R/CensoredLogistic.R
 d08346eb6c2da093dc6f30514e30729f *R/CensoredNormal.R
 7b09040724425b616217a3a79f2ca53c *R/CensoredStudentsT.R
@@ -9,7 +9,7 @@ d08346eb6c2da093dc6f30514e30729f *R/CensoredNormal.R
 8e889a27d0cba9c35e865c02738fc60b *R/TruncatedStudentsT.R
 344e4ffcdd1f1d98503bce6282bd66e0 *R/clogis.R
 f7694cea3648a9fe6b2deef4eebe6d94 *R/cnorm.R
-c637258b845f3ef68e790757a36fc403 *R/crch.R
+c890a6171b466b5eddaf4769a30e9cd6 *R/crch.R
 2684d35b213bac70aa638f79e02ef2f7 *R/crch.boost.R
 4da0b0b398642a66fbf5871994418e13 *R/crch.stabsel.R
 c9b8a1cd169bca5201a7364963e62a4d *R/ct.R
@@ -18,13 +18,13 @@ fb9a306c06d35b33d15db784f981d3cc *R/mtable.R
 d6362bbef478b3cf2ee8e0498543f8fe *R/tlogis.R
 dd081a3d7d8421b5888d73fdff158a01 *R/tnorm.R
 844fd3a131d0c46fe893b70d74a7fdf4 *R/tt.R
-0c6ad5b3446721162c89589e8077ab1c *build/partial.rdb
-37b282b3d0fdc0ed1aedd5cc0fef2696 *build/vignette.rds
+4caba8e22122781d682f0b85ba58007c *build/partial.rdb
+e4d7d7934718f24fecd16eace1727d9e *build/vignette.rds
 9e7b33663f8dea4985d0f2c364c10a62 *data/RainIbk.rda
-722bfa0fc755ef14c3df51f413dc6f68 *inst/CITATION
+30091e07f30770e368b8f48e7fc7a063 *inst/CITATION
 8f0ec5633a3af4d6efa7eace3e51141c *inst/doc/crch.R
 16b96f235d60dda312c6882ef2bb696f *inst/doc/crch.Rnw
-c6dfc5d8c9c804d85e5be05b26fa4c75 *inst/doc/crch.pdf
+d021bbb72d428ae4eae8d1e6536300fa *inst/doc/crch.pdf
 720b59b6732a9ce4895abfb0271cfd91 *man/CensoredLogistic.Rd
 f5fd80e124c4445b6852b349b6cc2d2d *man/CensoredNormal.Rd
 77a5ae3cb78ad9346fa203f1d470a392 *man/CensoredStudentsT.Rd
