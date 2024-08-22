@@ -57,6 +57,7 @@ point (with \code{-Inf} corresponding to untruncated), and the
 The truncated logistic distribution has probability density function (PDF):
 
 \deqn{f(x) = 1/\sigma \lambda((x - \mu)/\sigma) / (\Lambda((right - \mu)/\sigma) - \Lambda((left - \mu)/\sigma))}
+
 for \eqn{left \le x \le right}, and 0 otherwise,
 where \eqn{\Lambda} and \eqn{\lambda} are the cumulative distribution function
 and probability density function of the standard logistic distribution,
@@ -113,7 +114,9 @@ X <- TruncatedLogistic(
   left     = c(-Inf,   0, 0),
   right    = c( Inf, Inf, 5)
 )
+\donttest{
 X
+}
 
 ## compute mean of the truncated distribution
 mean(X)

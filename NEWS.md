@@ -1,3 +1,18 @@
+# crch 1.2-0
+
+* Improved implementations of expectation and variance of censored and truncated
+  normal distributions (contributed by Ioannis Kosmidis).
+
+* Turned `vignette("crch", package = "crch")`  from Sweave into Quarto
+  vignettes. Some improvements/updates in the text.
+
+* New package web page (via `altdoc`/`quarto`) at
+  <https://topmodels.R-Forge.R-project.org/crch/>
+
+* Achim Zeileis takes over maintenance from Jakob W. Messner. Added Ioannis Kosmidis
+  and Georg J. Mayr as contributors.
+
+
 # crch 1.1-2
 
 * Fixed name of first argument in `crps()` method to be consistent with the generic.

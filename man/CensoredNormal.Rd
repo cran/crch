@@ -59,7 +59,7 @@ The censored normal distribution has probability density function (PDF) \eqn{f(x
 \tabular{ll}{
 \eqn{\Phi((left - \mu)/\sigma)} \tab if \eqn{x \le left}\cr
 \eqn{1 - \Phi((right - \mu)/\sigma)} \tab if \eqn{x \ge right}\cr
-\eqn{\phi((x - \mu)/\sigma)/\sigma} \tab if \eqn{left < x < right}
+\eqn{\phi((x - \mu)/\sigma)/\sigma} \tab otherwise
 }
 
 where \eqn{\Phi} and \eqn{\phi} are the cumulative distribution function
@@ -118,11 +118,14 @@ X <- CensoredNormal(
   left  = c(-Inf,   0, 0),
   right = c( Inf, Inf, 5)
 )
+\donttest{
 X
+}
 
-## compute mean of the censored distribution
+## compute mean and variance of the censored distribution
 mean(X)
-## higher moments (variance, skewness, kurtosis) are not implemented yet
+variance(X)
+## higher moments (skewness, kurtosis) are not implemented yet
 
 ## support interval (minimum and maximum)
 support(X)
