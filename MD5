@@ -1,6 +1,6 @@
-957b4449f8959ae776ffd5ffcff935c8 *DESCRIPTION
+797720b698af359df7f89ba820cc1f84 *DESCRIPTION
 285333f5d9433194821d8cb735b9dab1 *NAMESPACE
-e04ebed65bcece0748c53723b266eebe *NEWS.md
+5442bccaeb273652621705df6cf9fe9c *NEWS.md
 647aa28d50a4c1bb5095b915cca8ee92 *R/CensoredLogistic.R
 cd36b8366f9cb102e20b77c159a8c12e *R/CensoredNormal.R
 7b09040724425b616217a3a79f2ca53c *R/CensoredStudentsT.R
@@ -28,11 +28,11 @@ a6a5a435560ed2c33e26f338728fc84d *inst/doc/crch.html
 c3890365303f64faaf29d349c1a84841 *inst/doc/crch.qmd
 a8b9eba8813e5d525901b49c2a35c691 *man/CensoredLogistic.Rd
 8b35f885e957f1fda1c65b11d0d9c413 *man/CensoredNormal.Rd
-efb67db49b3911351e851cb19a032d4f *man/CensoredStudentsT.Rd
+c28af78cd03acf9cedc2eec38e0b2cdd *man/CensoredStudentsT.Rd
 0481488554dbc34080178bc7b4d2990d *man/RainIbk.Rd
 4f2f519ff40599d25e80ef85a9807ed3 *man/TruncatedLogistic.Rd
 370cb4abc924c3430bfaa9f5f435d295 *man/TruncatedNormal.Rd
-a22b8c59f3f277206a7408e124ada0b1 *man/TruncatedStudentsT.Rd
+cd3aa368c1a592e5793133f78034f0e7 *man/TruncatedStudentsT.Rd
 99ea17054b8a3ea994dc30813613d328 *man/clogis.Rd
 5e14afa9be0bdec14cc624e0b5c9bc43 *man/cnorm.Rd
 a96c3f6186f152f848e136720164d3be *man/coef.crch.Rd
@@ -62,7 +62,7 @@ c622aa838a28d237be26935e354c08c6 *man/tt.Rd
 b9e856457d7fc9d20d57ec9db6ab6ea9 *src/tlogis.c
 b47afb02354cadc287ba51bcd37d8b2d *src/tnorm.c
 5a0951d04f28cd06457f244a3e2e09f7 *src/tt.c
-3d0a79e566882285816be722e5e3d81c *tests/Examples/crch-Ex.Rout.save
+5ecdba5f445baf1a5b769aeab599b74c *tests/Examples/crch-Ex.Rout.save
 026743e43d94c5c8fbc234542371277c *vignettes/crch.Rout.save
 6f2283428f0900aa28713273e317ea02 *vignettes/crch.bib
 c3890365303f64faaf29d349c1a84841 *vignettes/crch.qmd
