@@ -1,6 +1,6 @@
-797720b698af359df7f89ba820cc1f84 *DESCRIPTION
+776b232e996bc6252ba3f700969787cf *DESCRIPTION
 285333f5d9433194821d8cb735b9dab1 *NAMESPACE
-5442bccaeb273652621705df6cf9fe9c *NEWS.md
+137c268fccc0ffd4f9cf8fdb0f651e87 *NEWS.md
 647aa28d50a4c1bb5095b915cca8ee92 *R/CensoredLogistic.R
 cd36b8366f9cb102e20b77c159a8c12e *R/CensoredNormal.R
 7b09040724425b616217a3a79f2ca53c *R/CensoredStudentsT.R
@@ -19,13 +19,13 @@ d6362bbef478b3cf2ee8e0498543f8fe *R/tlogis.R
 0d59b740978d5da4efa97d9b02a2d5cb *R/tnorm.R
 844fd3a131d0c46fe893b70d74a7fdf4 *R/tt.R
 55a3d639f4149a83ad49395ac26fbb8f *README.md
-aa5e5a2cbfaea3d9b6cdbe378ac48cee *build/partial.rdb
-9ba88dd6153b392c94ed42baeacc8fa3 *build/vignette.rds
+4454e632feb75ce4f508807d50b3b12f *build/partial.rdb
+74ac96c51ede25a38d905c6d6d309720 *build/vignette.rds
 9e7b33663f8dea4985d0f2c364c10a62 *data/RainIbk.rda
 30091e07f30770e368b8f48e7fc7a063 *inst/CITATION
-4bbd83b441e7ac79dd45032596a78005 *inst/doc/crch.R
+98a4d74fbb706951ef7f37211f6049e2 *inst/doc/crch.R
 a6a5a435560ed2c33e26f338728fc84d *inst/doc/crch.html
-c3890365303f64faaf29d349c1a84841 *inst/doc/crch.qmd
+ae6874e19550ad97f3940fbd933ba750 *inst/doc/crch.qmd
 a8b9eba8813e5d525901b49c2a35c691 *man/CensoredLogistic.Rd
 8b35f885e957f1fda1c65b11d0d9c413 *man/CensoredNormal.Rd
 c28af78cd03acf9cedc2eec38e0b2cdd *man/CensoredStudentsT.Rd
@@ -38,7 +38,7 @@ cd3aa368c1a592e5793133f78034f0e7 *man/TruncatedStudentsT.Rd
 a96c3f6186f152f848e136720164d3be *man/coef.crch.Rd
 35abd4140d865e881f6127e7c92f074f *man/coef.crch.boost.Rd
 9fea0a5fa98199ba4e023a8af0115a84 *man/coef.hxlr.Rd
-1d81988498d8ff99e74ce6e79a542e58 *man/crch.Rd
+faa38c10ae64e9e432b542659f173edc *man/crch.Rd
 98263bb2d1fdda962d8341392c8cb80b *man/crch.boost.Rd
 c11d39ca16377230081d1ad334338fe5 *man/crch.control.Rd
 b62cb5cd67d5023c31a74aa1ca60e821 *man/crch.stabsel.Rd
@@ -65,4 +65,4 @@ b47afb02354cadc287ba51bcd37d8b2d *src/tnorm.c
 5ecdba5f445baf1a5b769aeab599b74c *tests/Examples/crch-Ex.Rout.save
 026743e43d94c5c8fbc234542371277c *vignettes/crch.Rout.save
 6f2283428f0900aa28713273e317ea02 *vignettes/crch.bib
-c3890365303f64faaf29d349c1a84841 *vignettes/crch.qmd
+ae6874e19550ad97f3940fbd933ba750 *vignettes/crch.qmd

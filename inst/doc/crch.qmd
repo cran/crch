@@ -46,7 +46,9 @@ vignette: >
   %\VignettePackage{crch}
 ---
 
-```{r preliminaries, include = FALSE}
+```{r}
+#| label: preliminaries
+#| include: false
 knitr::opts_chunk$set(
   engine = "R",
   collapse = TRUE,
@@ -411,7 +413,7 @@ shown in @fig-scatter:
 abline(coef(CRCH)[1:2], col = 4)
 ```
 
-```{r scatter}
+```{r}
 #| fig-width: 9
 #| fig-height: 5
 #| out-width: 100%
@@ -448,7 +450,7 @@ degrees of freedom of `r round(exp(tail(coef(CRCHstud), 1)), 2)` the
 student-t distribution resembles the (scaled) logistic distribution quite well
 (see @fig-dist). 
 
-```{r dist}
+```{r}
 #| fig-width: 9
 #| fig-height: 5
 #| out-width: 100%

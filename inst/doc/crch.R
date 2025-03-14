@@ -1,4 +1,6 @@
-## ----preliminaries, include = FALSE-------------------------------------------
+## -----------------------------------------------------------------------------
+#| label: preliminaries
+#| include: false
 knitr::opts_chunk$set(
   engine = "R",
   collapse = TRUE,
@@ -48,7 +50,7 @@ summary(CRCH)
 ## abline(coef(CRCH)[1:2], col = 4)
 
 
-## ----scatter------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #| fig-width: 9
 #| fig-height: 5
 #| out-width: 100%
@@ -73,7 +75,7 @@ CRCHstud <- crch(rain ~ ensmean | log(enssd), data = RainIbk, left = 0,
 AIC(CRCH, CRCHgau, CRCHstud)
 
 
-## ----dist---------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 #| fig-width: 9
 #| fig-height: 5
 #| out-width: 100%
