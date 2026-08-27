@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.53">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,6 +12,7 @@
 
 <title>Heteroscedastic Censored and Truncated Regression with crch</title>
 <style>
+
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -23,8 +24,9 @@ width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
 }
 
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -35,7 +37,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
 { counter-reset: source-line 0; }
@@ -49,48 +51,17 @@ border: none; display: inline-block;
 -khtml-user-select: none; -moz-user-select: none;
 -ms-user-select: none; user-select: none;
 padding: 0 4px; width: 4em;
-color: #aaaaaa;
 }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+pre.numberSource { margin-left: 3em; padding-left: 4px; }
 div.sourceCode
 { }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-code span.al { color: #ff0000; font-weight: bold; } 
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.at { color: #7d9029; } 
-code span.bn { color: #40a070; } 
-code span.bu { color: #008000; } 
-code span.cf { color: #007020; font-weight: bold; } 
-code span.ch { color: #4070a0; } 
-code span.cn { color: #880000; } 
-code span.co { color: #60a0b0; font-style: italic; } 
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.do { color: #ba2121; font-style: italic; } 
-code span.dt { color: #902000; } 
-code span.dv { color: #40a070; } 
-code span.er { color: #ff0000; font-weight: bold; } 
-code span.ex { } 
-code span.fl { color: #40a070; } 
-code span.fu { color: #06287e; } 
-code span.im { color: #008000; font-weight: bold; } 
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.kw { color: #007020; font-weight: bold; } 
-code span.op { color: #666666; } 
-code span.ot { color: #007020; } 
-code span.pp { color: #bc7a00; } 
-code span.sc { color: #4070a0; } 
-code span.ss { color: #bb6688; } 
-code span.st { color: #4070a0; } 
-code span.va { color: #19177c; } 
-code span.vs { color: #4070a0; } 
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 
 div.csl-bib-body { }
 div.csl-entry {
 clear: both;
-margin-bottom: 0em;
 }
 .hanging-indent div.csl-entry {
 margin-left:2em;
@@ -234,7 +205,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -250,7 +221,146 @@ window.Quarto = {
 };
 </script>
 
-<style type="text/css">body {background-color: #fff;margin: 1em auto;max-width: 700px;overflow: visible;padding-left: 2em;padding-right: 2em;font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;font-size: 14px;line-height: 1.35;}table {margin: 1em auto;border-width: 1px;border-color: #DDDDDD;border-style: outset;border-collapse: collapse;}table th {border-width: 2px;padding: 5px;border-style: inset;}table td {border-width: 1px;border-style: inset;line-height: 18px;padding: 5px 5px;}table, table th, table td {border-left-style: none;border-right-style: none;}table thead, table tr.even {background-color: #f7f7f7;}p {margin: 0.5em 0;}blockquote {background-color: #f6f6f6;padding: 0.25em 0.75em;}hr {border-style: solid;border: none;border-top: 1px solid #777;margin: 28px 0;}dl {margin-left: 0;}dl dd {margin-bottom: 13px;margin-left: 13px;}dl dt {font-weight: bold;}ul {margin-top: 0;}ul li {list-style: circle outside;}ul ul {margin-bottom: 0;}pre, code {background-color: #f7f7f7;border-radius: 3px;color: #333;white-space: pre-wrap; }pre {border-radius: 3px;margin: 5px 0px 10px 0px;padding: 10px;}pre:not([class]) {background-color: #f7f7f7;}code {font-family: Consolas, Monaco, 'Courier New', monospace;font-size: 85%;}p > code, li > code {padding: 2px 0px;}div.figure {text-align: center;}img {background-color: #FFFFFF;padding: 2px;border: 1px solid #DDDDDD;border-radius: 3px;border: 1px solid #CCCCCC;margin: 0 5px;}h1 {margin-top: 0;font-size: 35px;line-height: 40px;}h2 {border-bottom: 4px solid #f7f7f7;padding-top: 10px;padding-bottom: 2px;font-size: 145%;}h3 {border-bottom: 2px solid #f7f7f7;padding-top: 10px;font-size: 120%;}h4 {border-bottom: 1px solid #f7f7f7;margin-left: 8px;font-size: 105%;}h5, h6 {border-bottom: 1px solid #ccc;font-size: 105%;}a {color: #0033dd;text-decoration: none;}a:hover {color: #6666ff; }a:visited {color: #800080; }a:visited:hover {color: #BB00BB; }a[href^="http:"] {text-decoration: underline; }a[href^="https:"] {text-decoration: underline; }</style>
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+</style>
 </head>
 
 <body>
@@ -264,7 +374,7 @@ window.Quarto = {
 
 <div class="abstract">
 <div class="abstract-title">Abstract</div>
-<p>This introduction to the R package <strong>crch</strong> is a (slightly) modified version of <span class="citation" data-cites="messner2016">Messner, Mayr, and Zeileis (2016)</span>, published in <em>The R Journal</em>.<br>
+<p>This introduction to the R package <strong>crch</strong> is a (slightly) modified version of <span class="citation" data-cites="messner2016">Messner et al. (2016)</span>, published in <em>The R Journal</em>.<br>
 The <strong>crch</strong> package provides functions for maximum likelihood estimation of censored or truncated regression models with conditional heteroscedasticity along with suitable standard methods to summarize the fitted models and compute predictions, residuals, etc. The supported distributions include left- or right-censored or truncated Gaussian, logistic, or student-t distributions with potentially different sets of regressors for modeling the conditional location and scale. The models and their R implementation are introduced and illustrated by numerical weather prediction tasks using precipitation data for Innsbruck (Austria).</p>
 </div>
 </header>
@@ -289,7 +399,7 @@ The <strong>crch</strong> package provides functions for maximum likelihood esti
 <p>Censored or truncated response variables occur in a variety of applications. Censored data arise if exact values are only reported in a restricted range. Data may fall outside this range but are reported at the range limits. In contrast, if data outside this range are omitted completely we call it truncated. E.g., consider wind measurements with an instrument that needs a certain minimum wind speed to start working. If wind speeds below this minimum are recorded as <span class="math inline">\(\le\)</span><em>minimum</em> the data is censored. If only wind speeds exceeding this limit are reported and those below are omitted the data is truncated. Even if the generating process is not as clear, censoring or truncation can be useful to consider limited data such as precipitation observations.</p>
 <p>The tobit <span class="citation" data-cites="tobin1958">(Tobin 1958)</span> and truncated regression <span class="citation" data-cites="cragg1971">(Cragg 1971)</span> models are common linear regression models for censored and truncated conditionally normally distributed responses respectively.<br>
 Beside truncated data, truncated regression is also used in two-part models <span class="citation" data-cites="cragg1971">(Cragg 1971)</span> for censored type data: A binary (e.g., probit) regression model fits the exceedance probability of the lower limit and a truncated regression model fits the value given the lower limit is exceeded.</p>
-<p>Usually linear models like the tobit or truncated regression models assume homoscedasticity which means that the variance of an underlying normal distribution does not depend on covariates. However, sometimes this assumption does not hold and models that can consider conditional heteroscedasticity should be used. Such models have been proposed, e.g., for generalized linear models <span class="citation" data-cites="nelder1987">Smyth (1989)</span>, generalized additive models <span class="citation" data-cites="rigby1996">Rigby and Stasinopoulos (2005)</span>, or beta regression <span class="citation" data-cites="cribarineto2010">(Cribari-Neto and Zeileis 2010)</span>. There also exist several R packages with functions implementing the above models, e.g., <strong>dglm</strong> <span class="citation" data-cites="dunn2014">(Dunn, Smyth, and Corty 2023)</span>, <strong>glmx</strong> <span class="citation" data-cites="zeileis2013">(Zeileis, Koenker, and Doebler 2023)</span>, <strong>gamlss</strong> <span class="citation" data-cites="rigby2005">(Rigby and Stasinopoulos 2005)</span>, <strong>betareg</strong> <span class="citation" data-cites="zeileis2012">(Grün, Kosmidis, and Zeileis 2012)</span> amongst others.</p>
+<p>Usually linear models like the tobit or truncated regression models assume homoscedasticity which means that the variance of an underlying normal distribution does not depend on covariates. However, sometimes this assumption does not hold and models that can consider conditional heteroscedasticity should be used. Such models have been proposed, e.g., for generalized linear models <span class="citation" data-cites="nelder1987">Smyth (1989)</span>, generalized additive models <span class="citation" data-cites="rigby1996">Rigby and Stasinopoulos (2005)</span>, or beta regression <span class="citation" data-cites="cribarineto2010">(Cribari-Neto and Zeileis 2010)</span>. There also exist several R packages with functions implementing the above models, e.g., <strong>dglm</strong> <span class="citation" data-cites="dunn2014">(Dunn et al. 2023)</span>, <strong>glmx</strong> <span class="citation" data-cites="zeileis2013">(Zeileis et al. 2023)</span>, <strong>gamlss</strong> <span class="citation" data-cites="rigby2005">(Rigby and Stasinopoulos 2005)</span>, <strong>betareg</strong> <span class="citation" data-cites="zeileis2012">(Grün et al. 2012)</span> amongst others.</p>
 <p>The <strong>crch</strong> package provides functions to fit censored and truncated regression models that consider conditional heteroscedasticity. It has a convenient interface to estimate these models with maximum likelihood and provides several methods for analysis and prediction. In addition to the typical conditional Gaussian distribution assumptions it also allows for logistic and student-t distributions with heavier tails.</p>
 <p>The outline of the paper is as follows. <a href="#sec-models" class="quarto-xref">Section 2</a> describes the censored and truncated regression models, and <a href="#sec-impl" class="quarto-xref">Section 3</a> presents their R implementation. <a href="#sec-examples" class="quarto-xref">Section 4</a> illustrates the package functions with numerical weather prediction data of precipitation in Innsbruck (Austria) and finally <a href="#sec-summary" class="quarto-xref">Section 5</a> summarizes the paper.</p>
 <h2 data-number="2" id="sec-models"><span class="header-section-number">2</span> Regression models</h2>
@@ -592,13 +702,13 @@ Figure 2: Probability density functions of a student-t distribution with 9.56 d
 <span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">## 0.21087</span></span></code></pre></div>
 </div>
 <p>Note, that <code>pclogis()</code> could also be replaced by <code>plogis()</code> since they are equivalent between <span class="math inline">\(\text{left}\)</span> and <span class="math inline">\(\text{right}\)</span>.</p>
-<p>Clearly, other types of model misspecification or model generalization (depending on the point of view) for the classical tobit model are possible. In addition to heteroscedasticity, the type of response distribution, and the presence of hurdle effects as explored in the application here, further aspects might have to be addressed by the model. Especially in economics and the social sciences sample selection effects might be present in the two-part model which can be addressed (in the homoscedastic normal case) using the R packages <strong>sampleSelection</strong> <span class="citation" data-cites="toomet2008">(Toomet and Henningsen 2008)</span> or <strong>mhurdle</strong> <span class="citation" data-cites="croissant2013">(Croissant, Carlevaro, and Hoareau 2024)</span>. Furthermore, the scale link function or potential nonlinearities in the regression functions could be assessed, e.g., using the <strong>gamlss</strong> suite of packages <span class="citation" data-cites="stasinopoulos2007">(Stasinopoulos and Rigby 2007)</span>.</p>
+<p>Clearly, other types of model misspecification or model generalization (depending on the point of view) for the classical tobit model are possible. In addition to heteroscedasticity, the type of response distribution, and the presence of hurdle effects as explored in the application here, further aspects might have to be addressed by the model. Especially in economics and the social sciences sample selection effects might be present in the two-part model which can be addressed (in the homoscedastic normal case) using the R packages <strong>sampleSelection</strong> <span class="citation" data-cites="toomet2008">(Toomet and Henningsen 2008)</span> or <strong>mhurdle</strong> <span class="citation" data-cites="croissant2013">(Croissant et al. 2024)</span>. Furthermore, the scale link function or potential nonlinearities in the regression functions could be assessed, e.g., using the <strong>gamlss</strong> suite of packages <span class="citation" data-cites="stasinopoulos2007">(Stasinopoulos and Rigby 2007)</span>.</p>
 <h2 data-number="5" id="sec-summary"><span class="header-section-number">5</span> Summary</h2>
 <p>Censored and truncated response models are common in econometrics and other statistical applications. However, often the homoscedasticity assumption of these models is not fulfilled. This paper presented the <strong>crch</strong> package that provides functions to fit censored or truncated regression models with conditional heteroscedasticity. It supports Gaussian, logistic or student-t distributed censored or truncated responses and provides various convenient methods for analysis and prediction. To illustrate the package we showed that heteroscedastic censored and truncated models are well suited to improve precipitation forecasts.</p>
 <h2 class="unnumbered" id="references">References</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
 <div id="ref-chambers1992" class="csl-entry" role="listitem">
-Chambers, John M., and Trevor J. Hastie. 1992. <em>Statistical Models in <span>S</span></em>. London: Chapman &amp; Hall.
+Chambers, John M., and Trevor J. Hastie. 1992. <em>Statistical Models in <span>S</span></em>. Chapman &amp; Hall.
 </div>
 <div id="ref-cragg1971" class="csl-entry" role="listitem">
 Cragg, John G. 1971. <span>“Some Statistical Models for Limited Dependent Variables with Application to the Demand for Durable Goods.”</span> <em>Econometrica</em> 39 (5): 829–44. <a href="https://doi.org/10.2307/1909582">https://doi.org/10.2307/1909582</a>.
@@ -634,10 +744,10 @@ Messner, Jakob W., Achim Zeileis, Georg J. Mayr, and Daniel S. Wilks. 2014. <spa
 Nelder, John A., and Daryl Pregibon. 1987. <span>“An Extended Quasi-Likelihood Function.”</span> <em>Biometrika</em> 74 (2): 221–32. <a href="https://doi.org/10.2307/2336136">https://doi.org/10.2307/2336136</a>.
 </div>
 <div id="ref-rigby1996" class="csl-entry" role="listitem">
-Rigby, Robert A., and D. Mikis Stasinopoulos. 1996. <span>“Mean and Dispersion Additive Models.”</span> In <em>Statistical Theory and Computational Aspects of Smoothing</em>, edited by Wolfgang Härdle and Michael G. Schimek, 215–30. Contributions to Statistics. Physica-Verlag. <a href="https://doi.org/10.1007/978-3-642-48425-4_16">https://doi.org/10.1007/978-3-642-48425-4_16</a>.
+Rigby, Robert A., and D. Mikis Stasinopoulos. 1996. <span>“Mean and Dispersion Additive Models.”</span> In <em>Statistical Theory and Computational Aspects of Smoothing</em>, edited by Wolfgang Härdle and Michael G. Schimek. Contributions to Statistics. Physica-Verlag. <a href="https://doi.org/10.1007/978-3-642-48425-4_16">https://doi.org/10.1007/978-3-642-48425-4_16</a>.
 </div>
 <div id="ref-rigby2005" class="csl-entry" role="listitem">
-———. 2005. <span>“Generalized Additive Models for Location, Scale and Shape.”</span> <em>Journal of the Royal Statistical Society C</em> 54 (3): 507–54. <a href="https://doi.org/10.1111/j.1467-9876.2005.00510.x">https://doi.org/10.1111/j.1467-9876.2005.00510.x</a>.
+Rigby, Robert A., and D. Mikis Stasinopoulos. 2005. <span>“Generalized Additive Models for Location, Scale and Shape.”</span> <em>Journal of the Royal Statistical Society C</em> 54 (3): 507–54. <a href="https://doi.org/10.1111/j.1467-9876.2005.00510.x">https://doi.org/10.1111/j.1467-9876.2005.00510.x</a>.
 </div>
 <div id="ref-smyth1989" class="csl-entry" role="listitem">
 Smyth, Gordon K. 1989. <span>“Generalized Linear Models with Varying Dispersion.”</span> <em>Journal of the Royal Statistical Society B</em> 51 (1). <a href="https://doi.org/10.1111/j.2517-6161.1989.tb01747.x">https://doi.org/10.1111/j.2517-6161.1989.tb01747.x</a>.

@@ -210,7 +210,7 @@ crch.boost.fit <- function(x, z, y, left, right, truncated = FALSE,
       sdist <- function(x, location, scale, df, left = -Inf, right = Inf) {
         rval <- - sdist3(x, df = df, location = location, scale = scale, 
           lower = left, upper = right)
-        colnames(rval) <- c("dmu", "dsigma")
+        colnames(rval) <- c("mu", "sigma")
         rval
       }
 
@@ -563,7 +563,7 @@ print.summary.crch.boost <- function(x, digits = max(3, getOption("digits") - 3)
   if(!all(is.na(x$residuals))) {
     cat(paste("\nStandardized residuals:\n", sep = ""))
     print(structure(round(as.vector(quantile(x$residuals)), digits = digits),
-        .Names = c("Min", "1Q", "Median", "3Q", "Max")))
+        names = c("Min", "1Q", "Median", "3Q", "Max")))
   }
   cat(paste("\nmaximum stopping iteration:", x$iterations, "\n"))
   cat(paste("\noptimum stopping iterations:\n", sep = ""))
@@ -592,7 +592,7 @@ plot.crch.boost <- function(x, loglik = FALSE,
   standardize = TRUE, which = c("both", "location", "scale"), mstop = NULL,
   coef.label = TRUE, col = NULL, ...) 
 {
-  which <- match.arg(which)
+  which <- match.arg(which, c("both", "location", "scale"))
   k <- length(x$coefficient$location)
   q <- length(x$coefficient$scale)
   if(is.null(col)) col <- if(which == "both") c(1,2) else c(1,1)

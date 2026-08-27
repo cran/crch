@@ -15,10 +15,10 @@ library("crch")
 
 ## -----------------------------------------------------------------------------
 #| eval: false
-## crch(formula, data, subset, na.action, weights, offset, link.scale = "log",
-##   dist = "gaussian", df = NULL, left = -Inf, right = Inf, truncated = FALSE,
-##   type = "ml", control = crch.control(...),
-##   model = TRUE, x = FALSE, y = FALSE, ...)
+# crch(formula, data, subset, na.action, weights, offset, link.scale = "log",
+#   dist = "gaussian", df = NULL, left = -Inf, right = Inf, truncated = FALSE,
+#   type = "ml", control = crch.control(...),
+#   model = TRUE, x = FALSE, y = FALSE, ...)
 
 
 ## -----------------------------------------------------------------------------
@@ -35,8 +35,8 @@ RainIbk <- subset(RainIbk, enssd > 0)
 
 ## -----------------------------------------------------------------------------
 #| eval: false
-## plot(rain ~ ensmean, data = RainIbk, pch = 19, col = gray(0, alpha = 0.2))
-## abline(0, 1, col = 2)
+# plot(rain ~ ensmean, data = RainIbk, pch = 19, col = gray(0, alpha = 0.2))
+# abline(0, 1, col = 2)
 
 
 ## -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ summary(CRCH)
 
 ## -----------------------------------------------------------------------------
 #| eval: false
-## abline(coef(CRCH)[1:2], col = 4)
+# abline(coef(CRCH)[1:2], col = 4)
 
 
 ## -----------------------------------------------------------------------------

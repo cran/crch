@@ -1,3 +1,25 @@
+# crch 1.2-3
+
+* Code repository changed from R-Forge to Codeberg at:
+  <https://codeberg.org/zeileis/crch/>
+
+* Added basic altdoc page with overview and documentation at:
+  <https://zeileis.codeberg.page/crch/>
+
+* For all distribution objects (`CensoredNormal`, `CensoredLogistic`,
+  `CensoredStudentsT`, `TruncatedNormal`, `TruncatedLogistic`, `TruncatedStudentsT`)
+  there are now also `score()` and `hessian()` methods providing analytical
+  first and second derivatives of the log-likelihood with respect to the parameter
+  vector. Exceptions: Numerical derivatives are used with respect to the `df`
+  parameter for `CensoredStudentsT` and `TruncatedStudentsT`.
+
+* The distribution constructor functions `CensoredStudentsT()` and `TruncatedStudentsT()`
+  now have default argument `df = numeric()` so that by default a distribution
+  object of length zero is returned. All remaining arguments (`location`, `scale`,
+  `left`, and `right`) are set to `NULL` and are expanded by default to the length
+  of `df` (with previous default values of `0`, `1`, `-Inf`, and `Inf`, respectively).
+
+
 # crch 1.2-2
 
 * Improved vignette source to consistently use pipe comments and avoid
@@ -21,8 +43,7 @@
 * Turned `vignette("crch", package = "crch")`  from Sweave into Quarto
   vignettes. Some improvements/updates in the text.
 
-* New package web page (via `altdoc`/`quarto`) at
-  <https://topmodels.R-Forge.R-project.org/crch/>
+* New package web page (via `altdoc`/`quarto`).
 
 * Achim Zeileis takes over maintenance from Jakob W. Messner. Added Ioannis Kosmidis
   and Georg J. Mayr as contributors.

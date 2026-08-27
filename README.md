@@ -2,33 +2,33 @@
 
 <!-- README.md is generated from README.qmd via: quarto render README.qmd --to gfm -->
 
-<img src="https://topmodels.R-Forge.R-project.org/crch/crch.png" align="right" alt="countreg logo" width="110" />
+<img src="https://zeileis.codeberg.page/crch/crch.png" align="right" alt="countreg logo" width="110" />
 
 # Heteroscedastic Censored and Truncated Regression
 
 ## Overview
 
-The R package [crch](https://topmodels.R-Forge.R-project.org/crch/)
-provides various regression models for continuous or mixed
-discrete-continuous data with right- and/or left-censoring or truncation
-of the response. The models use separate linear predictors for the
-mean/location and variance/scale parameters and can thus incorporate
-heteroscedasticity (conditional on regressors). This has prompted the
-package name `crch` (pronounced like *search*) which stands for censored
-regression with conditional heteroscedasticity.
+The R package [crch](https://zeileis.codeberg.page/crch/) provides
+various regression models for continuous or mixed discrete-continuous
+data with right- and/or left-censoring or truncation of the response.
+The models use separate linear predictors for the mean/location and
+variance/scale parameters and can thus incorporate heteroscedasticity
+(conditional on regressors). This has prompted the package name `crch`
+(pronounced like *search*) which stands for censored regression with
+conditional heteroscedasticity.
 
 A number of different estimation methods can be used:
 
--   Maximum likelihood estimation.
--   Minimum CRPS estimation.
--   Boosting and stability selection.
+- Maximum likelihood estimation.
+- Minimum CRPS estimation.
+- Boosting and stability selection.
 
 The underlying infrastructure for various probability distributions
 encompasses:
 
--   Censored or truncated normal, logistic, and Student-t distributions.
--   Corresponding d/p/q/r functions.
--   `distributions3` objects.
+- Censored or truncated normal, logistic, and Student-t distributions.
+- Corresponding d/p/q/r functions.
+- `distributions3` objects.
 
 Heteroscedastic extended logistic regression (HXLR) via cumulative link
 models for ordinal data, obtained by interval-censoring continuous data,

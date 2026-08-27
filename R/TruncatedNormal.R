@@ -16,14 +16,6 @@ variance.TruncatedNormal <- function(x, ...) {
   setNames(s^2, names(x))
 }
 
-skewness.TruncatedNormal <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-kurtosis.TruncatedNormal <- function(x, ...) {
-  stop("not yet implemented")
-}
-
 random.TruncatedNormal <- function(x, n = 1L, drop = TRUE, ...) {
   stopifnot(requireNamespace("distributions3"))
   n <- distributions3::make_positive_integer(n)
@@ -73,4 +65,28 @@ is_discrete.TruncatedNormal <- function(d, ...) {
 
 is_continuous.TruncatedNormal <- function(d, ...) {
   setNames(rep.int(TRUE, length(d)), names(d))
+}
+
+score.TruncatedNormal <- function(d, x, which = NULL, drop = TRUE, ...) {
+  s <- stnorm(x, mean = d$mu, sd = d$sigma, left = d$left, right = d$right, which = which, drop = drop)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(s))) {
+      names(s) <- nam
+    } else {
+      rownames(s) <- nam
+    }
+  }
+  return(s)
+}
+
+hessian.TruncatedNormal <- function(d, x, which = NULL, drop = TRUE, expected = FALSE, ...) {
+  h <- htnorm(x, mean = d$mu, sd = d$sigma, left = d$left, right = d$right, which = which, drop = drop, expected = expected)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(h))) {
+      names(h) <- nam
+    } else {
+      rownames(h) <- nam
+    }
+  }
+  return(h)
 }

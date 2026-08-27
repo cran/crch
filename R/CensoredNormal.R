@@ -16,14 +16,6 @@ variance.CensoredNormal <- function(x, ...) {
   setNames(s^2, names(x))
 }
 
-skewness.CensoredNormal <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-kurtosis.CensoredNormal <- function(x, ...) {
-  stop("not yet implemented")
-}
-
 random.CensoredNormal <- function(x, n = 1L, drop = TRUE, ...) {
   stopifnot(requireNamespace("distributions3"))
   n <- distributions3::make_positive_integer(n)
@@ -73,4 +65,28 @@ is_discrete.CensoredNormal <- function(d, ...) {
 
 is_continuous.CensoredNormal <- function(d, ...) {
   setNames(!is.finite(d$left) & !is.finite(d$right), names(d))
+}
+
+score.CensoredNormal <- function(d, x, which = NULL, drop = TRUE, ...) {
+  s <- scnorm(x, mean = d$mu, sd = d$sigma, left = d$left, right = d$right, which = which, drop = drop)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(s))) {
+      names(s) <- nam
+    } else {
+      rownames(s) <- nam
+    }
+  }
+  return(s)
+}
+
+hessian.CensoredNormal <- function(d, x, which = NULL, drop = TRUE, expected = FALSE, ...) {
+  h <- hcnorm(x, mean = d$mu, sd = d$sigma, left = d$left, right = d$right, which = which, drop = drop, expected = expected)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(h))) {
+      names(h) <- nam
+    } else {
+      rownames(h) <- nam
+    }
+  }
+  return(h)
 }

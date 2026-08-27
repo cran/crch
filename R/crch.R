@@ -264,13 +264,13 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
       sdist <- function(x, location, scale, df, left = -Inf, right = Inf) {
         rval <- - sdist3(x, df = df, location = location, scale = scale, 
           lower = left, upper = right)
-        colnames(rval) <- c("dmu", "dsigma")
+        colnames(rval) <- c("mu", "sigma")
         rval
       }
       hdist <- function(x, location, scale, df, left = -Inf, right = Inf, which) {
         rval <- - hdist3(x, df = df, location = location, scale = scale, 
           lower = left, upper = right)
-        colnames(rval) <- c("d2mu", "d2sigma", "dmu.dsigma", "dsigma.dmu")
+        colnames(rval) <- c("mu", "sigma", "mu:sigma", "sigma:mu")
         rval
       }
 
@@ -289,7 +289,7 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     ## and hdist (optional), ddist, sdist, and hdist must be functions with
     ## arguments x, location, sd, df, left, right, and log)
     ddist <- dist$ddist
-    sdist <- if(is.null(dist$sdist)) NULL else  dist$sdist
+    sdist <- if(is.null(dist$sdist)) NULL else dist$sdist
     if(is.null(dist$hdist)) {
       if(!is.null(hessian))
         if(hessian == FALSE) warning("no analytic hessian available. Hessian is set to TRUE and numerical Hessian from optim is employed")
@@ -389,17 +389,15 @@ crch.fit <- function(x, z, y, left, right, truncated = FALSE,
     }
     hessfun <- function(par) {
       fit <- fitfun(par)
-      hess <- with(fit, hdist(y, mu, sigma, left = left, right = right,
-        df = df, which = c("mu", "sigma", "mu.sigma", "sigma.mu")))
-      grad <- with(fit, sdist(y, mu, sigma, left = left, right = right, 
-        df = df))[,"dsigma"]
-      hess[, "d2sigma"] <- hess[, "d2sigma"]*mu.eta(fit$zgamma)^2 + grad*dmu.deta(fit$zgamma)
-      hess[, "dmu.dsigma"] <- hess[, "dsigma.dmu"] <- hess[, "dmu.dsigma"]*mu.eta(fit$zgamma)
+      hess <- with(fit, hdist(y, mu, sigma, left = left, right = right, df = df, which = c("mu", "sigma", "mu:sigma", "sigma:mu")))
+      grad <- with(fit, sdist(y, mu, sigma, left = left, right = right, df = df))[, "sigma"]
+      hess[, "sigma"] <- hess[, "sigma"] * mu.eta(fit$zgamma)^2 + grad * dmu.deta(fit$zgamma)
+      hess[, "mu:sigma"] <- hess[, "sigma:mu"] <- hess[, "mu:sigma"] * mu.eta(fit$zgamma)
       hess <- weights*hess
-      hessmu <- crossprod(hess[,"d2mu"]*x, x)
-      hessmusigma <- crossprod(hess[,"dmu.dsigma"]*x, z)
-      hesssigmamu <- crossprod(hess[,"dsigma.dmu"]*z, x)
-      hesssigma <- crossprod(hess[,"d2sigma"]*z, z)
+      hessmu <- crossprod(hess[, "mu"] * x, x)
+      hessmusigma <- crossprod(hess[, "mu:sigma"] * x, z)
+      hesssigmamu <- crossprod(hess[, "sigma:mu"] * z, x)
+      hesssigma <- crossprod(hess[, "sigma"] * z, z)
       -cbind(rbind(hessmu, hesssigmamu), rbind(hessmusigma, hesssigma))
     }
   }
@@ -540,7 +538,7 @@ print.summary.crch <- function(x, digits = max(3, getOption("digits") - 3), ...)
   } else {
     cat(paste("Standardized residuals:\n", sep = ""))
     print(structure(round(as.vector(quantile(x$residuals)), digits = digits),
-      .Names = c("Min", "1Q", "Median", "3Q", "Max")))
+      names = c("Min", "1Q", "Median", "3Q", "Max")))
 
     if(NROW(x$coefficients$location)) {
       cat(paste("\nCoefficients (location model):\n", sep = ""))

@@ -11,18 +11,6 @@ mean.TruncatedLogistic <- function(x, ...) {
   setNames(m, names(x))
 }
 
-variance.TruncatedLogistic <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-skewness.TruncatedLogistic <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-kurtosis.TruncatedLogistic <- function(x, ...) {
-  stop("not yet implemented")
-}
-
 random.TruncatedLogistic <- function(x, n = 1L, drop = TRUE, ...) {
   stopifnot(requireNamespace("distributions3"))
   n <- distributions3::make_positive_integer(n)
@@ -72,4 +60,42 @@ is_discrete.TruncatedLogistic <- function(d, ...) {
 
 is_continuous.TruncatedLogistic <- function(d, ...) {
   setNames(rep.int(TRUE, length(d)), names(d))
+}
+
+score.TruncatedLogistic <- function(d, x, which = NULL, drop = TRUE, ...) {
+  if (is.null(which)) which <- c("mu", "sigma")
+  which <- gsub("scale", "sigma", which, fixed = TRUE)
+  which <- gsub("location", "mu", which, fixed = TRUE)
+  s <- stlogis(x, location = d$location, scale = d$scale, left = d$left, right = d$right, which = which, drop = drop)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(s))) {
+      names(s) <- nam
+    } else {
+      rownames(s) <- nam
+    }
+  }
+  if (!is.null(dim(s))) {
+    colnames(s) <- gsub("sigma", "scale", colnames(s), fixed = TRUE)
+    colnames(s) <- gsub("mu", "location", colnames(s), fixed = TRUE)
+  }
+  return(s)
+}
+
+hessian.TruncatedLogistic <- function(d, x, which = NULL, drop = TRUE, expected = FALSE, ...) {
+  if (is.null(which)) which <- c("mu", "sigma:mu", "mu:sigma", "sigma")
+  which <- gsub("scale", "sigma", which, fixed = TRUE)
+  which <- gsub("location", "mu", which, fixed = TRUE)
+  h <- htlogis(x, location = d$location, scale = d$scale, left = d$left, right = d$right, which = which, drop = drop, expected = expected)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(h))) {
+      names(h) <- nam
+    } else {
+      rownames(h) <- nam
+    }
+  }
+  if (!is.null(dim(h))) {
+    colnames(h) <- gsub("sigma", "scale", colnames(h), fixed = TRUE)
+    colnames(h) <- gsub("mu", "location", colnames(h), fixed = TRUE)
+  }
+  return(h)
 }

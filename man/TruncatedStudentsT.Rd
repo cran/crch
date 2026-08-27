@@ -22,7 +22,8 @@ distributions using the workflow from the \pkg{distributions3} package.
 }
 
 \usage{
-TruncatedStudentsT(df, location = 0, scale = 1, left = -Inf, right = Inf)
+TruncatedStudentsT(df = numeric(), location = NULL, scale = NULL,
+  left = NULL, right = NULL)
 }
 
 \arguments{

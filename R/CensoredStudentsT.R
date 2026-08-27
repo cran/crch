@@ -1,4 +1,8 @@
-CensoredStudentsT <- function(df, location = 0, scale = 1, left = -Inf, right = Inf) {
+CensoredStudentsT <- function(df = numeric(), location = NULL, scale = NULL, left = NULL, right = NULL) {
+  if (is.null(location)) location <- rep.int(0, length(df))
+  if (is.null(scale))    scale    <- rep.int(1, length(df))
+  if (is.null(left))     left     <- rep.int(-Inf, length(df))
+  if (is.null(right))    right    <- rep.int(Inf, length(df))
   n <- c(length(df), length(location), length(scale), length(left), length(right))
   stopifnot("parameter lengths do not match (only scalars are allowed to be recycled)" = all(n %in% c(1L, max(n))))
   d <- data.frame(df = df, location = location, scale = scale, left = left, right = right)
@@ -9,18 +13,6 @@ CensoredStudentsT <- function(df, location = 0, scale = 1, left = -Inf, right = 
 mean.CensoredStudentsT <- function(x, ...) {
   m <- ect(df = x$df, location = x$location, scale = x$scale, left = x$left, right = x$right)
   setNames(m, names(x))
-}
-
-variance.CensoredStudentsT <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-skewness.CensoredStudentsT <- function(x, ...) {
-  stop("not yet implemented")
-}
-
-kurtosis.CensoredStudentsT <- function(x, ...) {
-  stop("not yet implemented")
 }
 
 random.CensoredStudentsT <- function(x, n = 1L, drop = TRUE, ...) {
@@ -72,4 +64,47 @@ is_discrete.CensoredStudentsT <- function(d, ...) {
 
 is_continuous.CensoredStudentsT <- function(d, ...) {
   setNames(!is.finite(d$left) & !is.finite(d$right), names(d))
+}
+
+score.CensoredStudentsT <- function(d, x, which = NULL, drop = TRUE, ...) {
+  if (is.null(which)) which <- c("df", "mu", "sigma")
+  which <- gsub("scale", "sigma", which, fixed = TRUE)
+  which <- gsub("location", "mu", which, fixed = TRUE)
+  s <- sct(x, location = d$location, scale = d$scale, df = d$df, left = d$left, right = d$right, which = which, drop = drop)
+  if (!is.null(nam <- names(d))) {
+    if (is.null(dim(s))) {
+      names(s) <- nam
+    } else {
+      rownames(s) <- nam
+    }
+  }
+  if (!is.null(dim(s))) {
+    colnames(s) <- gsub("sigma", "scale", colnames(s), fixed = TRUE)
+    colnames(s) <- gsub("mu", "location", colnames(s), fixed = TRUE)
+  }
+  return(s)
+}
+
+## FIXME: check numerical stability of C functions at censoring points
+## hessian.CensoredStudentsT <- function(d, x, which = NULL, drop = TRUE, expected = FALSE, ...) {
+##   if (is.null(which)) which <- c("df", "mu:df", "sigma:df", "df:mu", "mu", "sigma:mu", "df:sigma", "mu:sigma", "sigma")
+##   which <- gsub("scale", "sigma", which, fixed = TRUE)
+##   which <- gsub("location", "mu", which, fixed = TRUE)
+##   h <- hct(x, location = d$location, scale = d$scale, df = d$df, left = d$left, right = d$right, which = which, drop = drop, expected = expected)
+##   if (!is.null(nam <- names(d))) {
+##     if (is.null(dim(h))) {
+##       names(h) <- nam
+##     } else {
+##       rownames(h) <- nam
+##     }
+##   }
+##   if (!is.null(dim(h))) {
+##     colnames(h) <- gsub("sigma", "scale", colnames(h), fixed = TRUE)
+##     colnames(h) <- gsub("mu", "location", colnames(h), fixed = TRUE)
+##   }
+##   return(h)
+## }
+hessian.CensoredStudentsT <- function(d, x, which = NULL, drop = TRUE, expected = FALSE, ...) {
+  if (is.null(which)) which <- c("df", "location:df", "scale:df", "df:location", "location", "scale:location", "df:scale", "location:scale", "scale")
+  NextMethod()
 }

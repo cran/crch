@@ -45,52 +45,78 @@ qcnorm <- function(p, mean = 0, sd = 1, left = -Inf, right = Inf,
 }
 
 ## scores
-scnorm <- function(x, mean = 0, sd = 1, left = -Inf, right = Inf,
-  which = c("mu", "sigma")) {
-  input <- data.frame(x = as.numeric(x), mean = as.numeric(mean), sd = as.numeric(sd), 
-    left = as.numeric(left), right = as.numeric(right))
-  if(!is.character(which))
-    which <- c("mu", "sigma")[as.integer(which)]
-  which <- tolower(which)
-  score <- NULL
-  
-  for(w in which) {
-    if(w == "mu")
-      score2 <- with(input, .Call("scnorm_mu", x, mean, sd, left, right))
-    if(w == "sigma")
-      score2 <- with(input, .Call("scnorm_sigma", x, mean, sd, left, right))
-    score <- cbind(score, score2)
+scnorm <- function(x, mean = 0, sd = 1, left = -Inf, right = Inf, which = NULL, drop = TRUE) {
+  stopifnot(
+    "parameter 'sd' must always be non-negative" = all(sd >= 0)
+  )
+  p <- c("mu", "sigma")
+  if (is.null(which)) which <- p
+  which <- match.arg(tolower(which), p, several.ok = TRUE)
+
+  ## assure that all arguments are expanded to equal length
+  n <- max(length(x), length(mean), length(sd), length(left), length(right))
+  x <- rep_len(as.numeric(x), n)
+  mean <- rep_len(as.numeric(mean), n)
+  sd <- rep_len(as.numeric(sd), n)
+  left <- rep_len(as.numeric(left), n)
+  right <- rep_len(as.numeric(right), n)
+
+  ## compute scores
+  scr <- function(par) switch(par,
+    "mu"  = .Call("scnorm_mu", x, mean, sd, left, right),
+    "sigma" = .Call("scnorm_sigma", x, mean, sd, left, right))
+
+  ## if possible return single vector, otherwise collect in matrix
+  if (drop && length(which) == 1L) {
+    s <- scr(which)
+  } else {
+    s <- lapply(which, scr)
+    s <- do.call("cbind", s)
+    colnames(s) <- which
   }
-  if(is.null(dim(score)))
-    score <- matrix(score, ncol = 1)
-  colnames(score) <- paste("d", which, sep = "")
-  score
+  return(s)
 }
 
 ## Hessian
-hcnorm <- function(x, mean = 0, sd = 1, left = -Inf, right = Inf, 
-  which = c("mu", "sigma")) {
-  input <- data.frame(x = as.numeric(x), mean = as.numeric(mean), sd = as.numeric(sd), 
-    left = as.numeric(left), right = as.numeric(right))
-  if(!is.character(which))
-    which <- c("mu", "sigma", "mu.sigma", "sigma.mu")[as.integer(which)]
-  which <- tolower(which)
-  hess <- list()
-  for(w in which) {       
-    if(w == "mu")         
-      hess[[w]] <- with(input, .Call("hcnorm_mu", x, mean, sd, left, right))  
-    if(w == "sigma")
-      hess[[w]] <- with(input, .Call("hcnorm_sigma", x, mean, sd, left, right))  
-    if(w %in% c("mu.sigma", "sigma.mu"))
-      hess[[w]] <- with(input, .Call("hcnorm_musigma", x, mean, sd, left, right))  
-  }
+hcnorm <- function(x, mean = 0, sd = 1, left = -Inf, right = Inf, which = NULL, drop = TRUE, expected = FALSE) {
+  if (expected) stop("only the observed hessian is available")
 
-  hess <- do.call("cbind", hess)
-  colnames(hess) <- gsub("mu", "dmu", colnames(hess))
-  colnames(hess) <- gsub("sigma", "dsigma", colnames(hess))
-  colnames(hess)[colnames(hess) == "dmu"] <- "d2mu"
-  colnames(hess)[colnames(hess) == "dsigma"] <- "d2sigma"
-  hess
+  ## available and selected parameters/combinations and mappings for symmetries
+  p <- c("mu" = "mu", "sigma:mu" = "mu:sigma", "mu:sigma" = "mu:sigma", "sigma" = "sigma")
+  if (is.null(which)) which <- names(p)
+  
+  ## which combinations need to be computed?
+  which <- match.arg(which, names(p), several.ok = TRUE)
+  w <- unique(p[which])
+
+  ## sanity checks
+  stopifnot(
+    "parameter 'sd' must always be non-negative" = all(sd >= 0)
+  )
+  n <- max(length(x), length(mean), length(sd), length(left), length(right))
+  x <- rep_len(as.numeric(x), n)
+  mean <- rep_len(as.numeric(mean), n)
+  sd <- rep_len(as.numeric(sd), n)
+  left <- rep_len(as.numeric(left), n)
+  right <- rep_len(as.numeric(right), n)
+
+  ## function for computing Hessian elements (observed only)
+  hess <- function(par) switch(par,
+    "mu"    = .Call("hcnorm_mu", x, mean, sd, left, right),
+    "sigma" = .Call("hcnorm_sigma", x, mean, sd, left, right),
+    .Call("hcnorm_musigma", x, mean, sd, left, right))
+  
+  ## if possible return single vector, otherwise collect in matrix
+  if (drop && length(which) == 1L) {
+    h <- hess(w)
+  } else {
+    h <- lapply(w, hess)
+    h <- do.call("cbind", h)
+    colnames(h) <- w
+    if (!identical(w, which)) h <- h[, p[which], drop = FALSE]
+    colnames(h) <- which
+  }
+  return(h)
 }
 
 
